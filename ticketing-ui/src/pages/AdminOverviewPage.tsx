@@ -51,7 +51,7 @@ export function AdminOverviewPage({ onNavigate }: Props) {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-indigo-600">🎫 Nugget Tickets</h1>
+            <h1 className="text-xl font-bold text-indigo-600">🎫 NoLife Ticket</h1>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">ADMIN</span>
           </div>
           <div className="flex items-center gap-4">
@@ -205,3 +205,5 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
     </div>
   );
 }
+
+

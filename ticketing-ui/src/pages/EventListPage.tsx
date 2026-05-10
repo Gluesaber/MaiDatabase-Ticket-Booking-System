@@ -141,7 +141,7 @@ export function EventListPage({ onNavigate }: Props) {
 
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-indigo-600">🎫 Nugget Tickets</h1>
+          <h1 className="text-xl font-bold text-indigo-600">🎫 NoLife Ticket</h1>
           <div className="flex items-center gap-4">
             {user ? (
               <>
@@ -170,7 +170,7 @@ export function EventListPage({ onNavigate }: Props) {
         <FilterBar allTags={allTags} allVenues={allVenues} initial={filters} onApply={handleApply} />
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400">Loading events…</div>
+          <div className="text-center py-20 text-gray-400">Loading eventsโ€ฆ</div>
         ) : eventGroups.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <p className="text-lg mb-2">No events found</p>
@@ -250,7 +250,7 @@ export function EventListPage({ onNavigate }: Props) {
                 disabled={paying}
                 className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
               >
-                {paying ? 'Processing…' : `Pay ฿${Number(booking.totalAmount).toLocaleString()}`}
+                {paying ? 'Processingโ€ฆ' : `Pay ฿${Number(booking.totalAmount).toLocaleString()}`}
               </button>
             </div>
           </div>
@@ -260,7 +260,7 @@ export function EventListPage({ onNavigate }: Props) {
       {stage === 'success' && (
         <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-8 text-center">
-            <div className="text-5xl mb-4">🎉</div>
+            <div className="text-5xl mb-4">๐</div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
             <p className="text-gray-500 text-sm mb-6">Your tickets are confirmed. Check your bookings history.</p>
             <div className="flex flex-col gap-2">
@@ -280,3 +280,5 @@ export function EventListPage({ onNavigate }: Props) {
     </div>
   );
 }
+
+

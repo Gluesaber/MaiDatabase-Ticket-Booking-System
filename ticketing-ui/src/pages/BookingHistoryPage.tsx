@@ -141,7 +141,7 @@ export function BookingHistoryPage({ onNavigate }: Props) {
                         Pay
                       </button>
                     )}
-                    {(item.status === 'PENDING' || item.status === 'CONFIRMED') && (
+                    {item.status === 'PENDING' && (
                       <button
                         onClick={() => handleCancel(item.bookingId, item.eventTitle)}
                         disabled={cancellingId === item.bookingId}

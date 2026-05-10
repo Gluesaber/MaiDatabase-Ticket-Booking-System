@@ -35,7 +35,7 @@ export function RegisterPage({ onNavigate }: Props) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
-        <p className="text-gray-500 text-sm mb-6">Join Nugget Tickets today</p>
+        <p className="text-gray-500 text-sm mb-6">Join NoLife Ticket today</p>
 
         {error && <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>}
 
@@ -90,7 +90,7 @@ export function RegisterPage({ onNavigate }: Props) {
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? 'Creating accountโ€ฆ' : 'Create account'}
           </button>
         </form>
 
@@ -104,3 +104,5 @@ export function RegisterPage({ onNavigate }: Props) {
     </div>
   );
 }
+
+

@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 interface Props { onNavigate: (page: string) => void; }
 
-// ── Peak Sales ────────────────────────────────────────────────────────────────
+// โ”€โ”€ Peak Sales โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 interface PeakSalesPoint {
   hour: number; label: string;
   sun: number; mon: number; tue: number; wed: number; thu: number; fri: number; sat: number;
@@ -25,7 +25,7 @@ const DAYS = [
 type DayKey = typeof DAYS[number]['key'];
 function rowTotal(r: PeakSalesPoint) { return r.sun + r.mon + r.tue + r.wed + r.thu + r.fri + r.sat; }
 
-// ── Other report types ────────────────────────────────────────────────────────
+// โ”€โ”€ Other report types โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 interface RegionPoint   { province: string; ticketsSold: number; totalIncome: number; }
 interface CapacityPoint { eventTitle: string; venueName: string; showSchedules: string; totalCapacity: number; bookedTickets: number; fillRate: number; }
 interface TopEventPoint { eventTitle: string; ticketsSold: number; totalIncome: number; }
@@ -95,7 +95,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
     load(reportType, '', '', undefined);
   }
 
-  // ── Peak Sales computed ──────────────────────────────────────────────────
+  // โ”€โ”€ Peak Sales computed โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
   const grandTotal  = peakData.reduce((s, r) => s + rowTotal(r), 0);
   const colTotal    = (key: DayKey) => peakData.reduce((s, r) => s + r[key], 0);
 
@@ -112,7 +112,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-indigo-600">🎫 Nugget Tickets</h1>
+            <h1 className="text-xl font-bold text-indigo-600">🎫 NoLife Ticket</h1>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">ADMIN</span>
           </div>
           <div className="flex items-center gap-4">
@@ -186,14 +186,14 @@ export function AdminReportsPage({ onNavigate }: Props) {
         {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{error}</div>}
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400">Loading report…</div>
+          <div className="text-center py-20 text-gray-400">Loading reportโ€ฆ</div>
         ) : isEmpty ? (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
             <p className="text-gray-400">No data found for the selected period.</p>
           </div>
         ) : (
           <>
-            {/* ── Peak Sales ─────────────────────────────────────── */}
+            {/* โ”€โ”€ Peak Sales โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */}
             {reportType === 'peak-sales' && (
               <>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
@@ -213,7 +213,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <div className="px-5 py-3 border-b border-gray-100">
-                    <h3 className="text-base font-semibold text-gray-800">Sales Volume by Hour — {grandTotal.toLocaleString()} tickets total</h3>
+                    <h3 className="text-base font-semibold text-gray-800">Sales Volume by Hour โ€” {grandTotal.toLocaleString()} tickets total</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -232,7 +232,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                               <td key={d.key} className="text-center px-3 py-2.5">
                                 {row[d.key] > 0
                                   ? <span className="font-medium" style={{ color: d.color }}>{row[d.key]}</span>
-                                  : <span className="text-gray-300">—</span>}
+                                  : <span className="text-gray-300">โ€”</span>}
                               </td>
                             ))}
                             <td className="text-center px-4 py-2.5 font-semibold text-gray-900">{rowTotal(row)}</td>
@@ -252,7 +252,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
               </>
             )}
 
-            {/* ── Top Region ─────────────────────────────────────── */}
+            {/* โ”€โ”€ Top Region โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */}
             {reportType === 'top-region' && (
               <>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
@@ -295,7 +295,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
               </>
             )}
 
-            {/* ── Capacity Analysis ──────────────────────────────── */}
+            {/* โ”€โ”€ Capacity Analysis โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */}
             {reportType === 'capacity' && (
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-5 py-3 border-b border-gray-100">
@@ -343,7 +343,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
               </div>
             )}
 
-            {/* ── Top Events by Income ───────────────────────────── */}
+            {/* โ”€โ”€ Top Events by Income โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */}
             {reportType === 'top-income' && (
               <>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
@@ -385,7 +385,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
               </>
             )}
 
-            {/* ── Top Events by Tickets Sold ─────────────────────── */}
+            {/* โ”€โ”€ Top Events by Tickets Sold โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€ */}
             {reportType === 'top-tickets' && (
               <>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
@@ -432,3 +432,5 @@ export function AdminReportsPage({ onNavigate }: Props) {
     </div>
   );
 }
+
+

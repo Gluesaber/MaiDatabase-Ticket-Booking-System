@@ -61,7 +61,7 @@ export function AdminVenuePage({ onNavigate }: Props) {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-indigo-600">🎫 Nugget Tickets</h1>
+            <h1 className="text-xl font-bold text-indigo-600">🎫 NoLife Ticket</h1>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
               ADMIN
             </span>
@@ -104,7 +104,7 @@ export function AdminVenuePage({ onNavigate }: Props) {
         )}
 
         {loading ? (
-          <p className="text-center text-gray-400 py-20">Loading…</p>
+          <p className="text-center text-gray-400 py-20">Loadingโ€ฆ</p>
         ) : venues.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
             <p className="text-gray-400 text-lg mb-3">No venues yet</p>
@@ -167,3 +167,5 @@ export function AdminVenuePage({ onNavigate }: Props) {
     </div>
   );
 }
+
+
