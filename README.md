@@ -1,4 +1,4 @@
-# Nugget Tickets — Database Ticket Booking System
+# NoLife Ticket — Database Ticket Booking System
 
 A full-stack ticketing platform built with PostgreSQL, Spring Boot 3, and React.
 
@@ -47,6 +47,11 @@ psql -U postgres -d ticketing -f ddl.sql
 psql -U postgres -d ticketing -f seed.sql
 ```
 
+Optionally load realistic demo data (descriptions + 200 booking logs):
+```bash
+psql -U postgres -d ticketing -f seed_descriptions_and_bookings.sql
+```
+
 **2. Start the backend**
 ```bash
 cd ticketing
@@ -69,23 +74,27 @@ Frontend runs at http://localhost:5173
 ## Project Structure
 
 ```
-├── ddl.sql              # Database schema
-├── seed.sql             # Sample data
-├── docker-compose.yml   # Docker setup
-├── ticketing/           # Spring Boot backend
+├── ddl.sql                          # Database schema
+├── seed.sql                         # Base sample data
+├── seed_descriptions_and_bookings.sql  # Demo data: event descriptions + 200 bookings
+├── docker-compose.yml               # Docker setup
+├── ticketing/                       # Spring Boot backend
 │   └── src/main/java/com/ticketing/
-│       ├── controller/  # REST endpoints
-│       ├── service/     # Business logic
-│       ├── entity/      # JPA entities
-│       ├── repository/  # Data access
-│       ├── security/    # JWT auth
-│       └── dto/         # Request/response objects
-└── ticketing-ui/        # React frontend
+│       ├── controller/              # REST endpoints
+│       ├── service/                 # Business logic
+│       ├── entity/                  # JPA entities
+│       ├── repository/              # Data access
+│       ├── security/                # JWT auth
+│       ├── specification/           # JPA Criteria search filters
+│       └── dto/                     # Request/response objects
+└── ticketing-ui/                    # React frontend
     └── src/
-        ├── pages/       # Page components
-        ├── components/  # Shared UI components
-        ├── services/    # API calls
-        └── types.ts     # TypeScript types
+        ├── pages/                   # Page components
+        ├── components/              # Shared UI components
+        ├── services/                # API calls
+        ├── context/                 # Auth context
+        ├── hooks/                   # Custom hooks
+        └── types.ts                 # TypeScript types
 ```
 
 ---
@@ -107,25 +116,33 @@ All accounts use password: `password`
 ## Features
 
 ### Customer
-- Browse events with filters (tag, price, date)
+- Browse and search events with filters:
+  - Title search (case-insensitive partial match)
+  - Age rating toggles (G / PG / PG-13 / R / NC-17)
+  - Venue, tags, price range, and date range
+  - Active filters shown as removable chips
+- View event details modal with full description and showtime list
 - Select seats on a venue layout map
-- Book tickets (up to the per-person limit)
+- Book tickets (up to the per-person limit per showtime)
 - 15-minute payment countdown after booking
 - Pay via Credit Card, Debit Card, QR Code, Bank Transfer, or Wallet
-- View booking history with payment status
-- Cancel pending or confirmed bookings
+- View booking history with ticket breakdown and payment status
+- Cancel **pending** bookings (confirmed purchases are non-refundable)
 
 ### Organizer
-- Create and manage their own events (title, duration, age rating, tags)
-- Add showtimes with venue, schedule, and ticket tiers
+- Create and manage their own events (title, description, duration, age rating, tags, thumbnail)
+- Add showtimes with venue, schedule, ticket-per-person limit, and tiered pricing
 - Edit event details and showtime settings
-- Delete events/showtimes (active bookings are auto-cancelled)
+- Delete events and showtimes (active bookings are auto-cancelled)
 - Venue double-booking prevention
 
 ### Admin
 - Full access to all events and showtimes
-- Manage venues (create, edit, delete)
+- Manage venues (create, edit, delete with conflict protection)
 - Manage user roles (promote/demote between admin, organizer, customer)
+- Overview dashboard:
+  - Key stats: total revenue, tickets sold this month, active bookings, total users
+  - Recent bookings table and upcoming showtimes with fill-rate indicators
 - Reports dashboard:
   - **Peak Sales Period** — hourly/daily ticket sales heatmap, filterable by event
   - **Top-Selling Province** — revenue by venue location
@@ -138,6 +155,8 @@ All accounts use password: `password`
 ## Age Ratings
 
 Events use MPAA ratings: `G`, `PG`, `PG-13`, `R`, `NC-17`
+
+---
 
 ## API Base URL
 
@@ -152,11 +171,26 @@ Key endpoints:
 | POST | `/auth/login` | Public | Login |
 | POST | `/auth/register` | Public | Register |
 | GET | `/events` | Public | List all events |
-| GET | `/events/search` | Public | Filter events |
+| GET | `/events/search` | Public | Filter events (title, tags, ratings, venues, price, date) |
 | GET | `/events/mine` | Organizer/Admin | My events only |
+| POST | `/events` | Organizer/Admin | Create event |
+| PUT | `/events/{id}` | Organizer/Admin | Update event |
+| DELETE | `/events/{id}` | Organizer/Admin | Delete event |
+| POST | `/showtimes` | Organizer/Admin | Create showtime |
+| PUT | `/showtimes/{id}` | Organizer/Admin | Update showtime |
+| DELETE | `/showtimes/{id}` | Organizer/Admin | Delete showtime |
+| GET | `/venues` | Public | List venues |
+| GET | `/venues/{id}/layout` | Customer | Seat layout for a showtime |
 | POST | `/bookings` | Customer | Create booking |
-| POST | `/payments` | Customer | Pay for booking |
+| POST | `/bookings/{id}/cancel` | Customer | Cancel pending booking |
 | GET | `/bookings/history` | Customer | Booking history |
+| POST | `/payments` | Customer | Pay for booking |
+| GET | `/tags` | Public | List event tags |
 | GET | `/admin/users` | Admin | List all users |
 | PUT | `/admin/users/{id}/role` | Admin | Change user role |
-| GET | `/admin/reports/peak-sales` | Admin | Peak sales report |
+| GET | `/admin/reports/overview` | Admin | Dashboard overview stats |
+| GET | `/admin/reports/peak-sales` | Admin | Peak sales heatmap |
+| GET | `/admin/reports/top-region` | Admin | Revenue by province |
+| GET | `/admin/reports/capacity` | Admin | Showtime fill rates |
+| GET | `/admin/reports/top-events-income` | Admin | Top events by revenue |
+| GET | `/admin/reports/top-events-tickets` | Admin | Top events by tickets sold |
