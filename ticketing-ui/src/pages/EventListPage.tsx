@@ -1,0 +1,250 @@
+import { useState, useEffect } from 'react';
+import type { Showtime, BookingResponse, TagDto } from '../types';
+import { api } from '../services/ApiService';
+import { EventCard } from '../components/EventCard';
+import { SeatSelection } from '../components/SeatSelection';
+import { PaymentCountdownBanner } from '../components/PaymentCountdownBanner';
+import { FilterBar, EMPTY_FILTERS } from '../components/FilterBar';
+import type { FilterValues } from '../components/FilterBar';
+import { useAuth } from '../context/AuthContext';
+
+interface Props {
+  onNavigate: (page: string) => void;
+}
+
+type Stage = 'list' | 'seats' | 'payment' | 'success';
+
+function parseFiltersFromUrl(): FilterValues {
+  const p = new URLSearchParams(window.location.search);
+  const tagParam = p.get('tags');
+  return {
+    tagIds: tagParam ? tagParam.split(',').map(Number).filter(Boolean) : [],
+    minPrice: p.get('minPrice') ?? '',
+    maxPrice: p.get('maxPrice') ?? '',
+    startDate: p.get('startDate') ?? '',
+    endDate: p.get('endDate') ?? '',
+  };
+}
+
+function filtersToSearch(f: FilterValues): string {
+  const p = new URLSearchParams();
+  if (f.tagIds.length > 0) p.set('tags', f.tagIds.join(','));
+  if (f.minPrice) p.set('minPrice', f.minPrice);
+  if (f.maxPrice) p.set('maxPrice', f.maxPrice);
+  if (f.startDate) p.set('startDate', f.startDate);
+  if (f.endDate) p.set('endDate', f.endDate);
+  const qs = p.toString();
+  return qs ? `?${qs}` : window.location.pathname;
+}
+
+export function EventListPage({ onNavigate }: Props) {
+  const { user, logout } = useAuth();
+  const [showtimes, setShowtimes] = useState<Showtime[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<FilterValues>(parseFiltersFromUrl);
+  const [allTags, setAllTags] = useState<TagDto[]>([]);
+  const [selected, setSelected] = useState<Showtime | null>(null);
+  const [booking, setBooking] = useState<BookingResponse | null>(null);
+  const [stage, setStage] = useState<Stage>('list');
+  const [payMethod, setPayMethod] = useState('CREDIT_CARD');
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState('');
+
+  function loadShowtimes(f: FilterValues) {
+    setLoading(true);
+    api.searchEvents({
+      tagIds: f.tagIds.length > 0 ? f.tagIds : undefined,
+      minPrice: f.minPrice || undefined,
+      maxPrice: f.maxPrice || undefined,
+      startDate: f.startDate || undefined,
+      endDate: f.endDate || undefined,
+    })
+      .then(setShowtimes)
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    api.getTags().then(setAllTags);
+    loadShowtimes(filters);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleApply(newFilters: FilterValues) {
+    setFilters(newFilters);
+    window.history.replaceState({}, '', filtersToSearch(newFilters));
+    loadShowtimes(newFilters);
+  }
+
+  async function handleBook(tickets: { tierId: number; seatCode: string }[]) {
+    if (!selected) return;
+    try {
+      const res = await api.createBooking(selected.showtimeId, tickets);
+      setBooking(res);
+      setStage('payment');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Booking failed');
+    }
+  }
+
+  async function handlePay() {
+    if (!booking) return;
+    setPaying(true);
+    setPayError('');
+    try {
+      await api.processPayment(booking.bookingId, payMethod, booking.totalAmount);
+      setStage('success');
+    } catch (err: unknown) {
+      setPayError(err instanceof Error ? err.message : 'Payment failed');
+    } finally {
+      setPaying(false);
+    }
+  }
+
+  function reset() {
+    setSelected(null);
+    setBooking(null);
+    setStage('list');
+    setPayError('');
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {stage === 'payment' && booking && (
+        <PaymentCountdownBanner expiresAt={booking.expiresAt} onExpired={reset} />
+      )}
+
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-bold text-indigo-600">🎫 Nugget Tickets</h1>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <span className="text-sm text-gray-600">Hi, {user.firstName}</span>
+                {(user.role === 'organizer' || user.role === 'admin') && (
+                  <button onClick={() => onNavigate('dashboard')} className="text-sm text-purple-600 font-medium hover:underline">
+                    Dashboard
+                  </button>
+                )}
+                {user.role === 'customer' && (
+                  <button onClick={() => onNavigate('history')} className="text-sm text-indigo-600 hover:underline">My Bookings</button>
+                )}
+                <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">Sign out</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => onNavigate('login')} className="text-sm text-indigo-600 hover:underline">Sign in</button>
+                <button onClick={() => onNavigate('register')} className="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700">Register</button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <FilterBar allTags={allTags} initial={filters} onApply={handleApply} />
+
+        {loading ? (
+          <div className="text-center py-20 text-gray-400">Loading events…</div>
+        ) : showtimes.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <p className="text-lg mb-2">No events found</p>
+            <p className="text-sm">Try adjusting or clearing the filters.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {showtimes.map(s => (
+              <EventCard
+                key={s.showtimeId}
+                showtime={s}
+                onSelect={st => {
+                  if (!user) { onNavigate('login'); return; }
+                  if (user.role !== 'customer') {
+                    alert('Only customers can book tickets. Use your Dashboard to manage events.');
+                    return;
+                  }
+                  setSelected(st);
+                  setStage('seats');
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {stage === 'seats' && selected && (
+        <SeatSelection
+          showtime={selected}
+          onConfirm={handleBook}
+          onCancel={reset}
+        />
+      )}
+
+      {stage === 'payment' && booking && (
+        <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4 pt-12">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Complete Payment</h2>
+            <div className="space-y-2 mb-4 text-sm">
+              {booking.tickets.map(t => (
+                <div key={t.ticketId} className="flex justify-between text-gray-700">
+                  <span>{t.seatCode} ({t.tierName})</span>
+                  <span>฿{Number(t.price).toLocaleString()}</span>
+                </div>
+              ))}
+              <div className="flex justify-between font-bold text-gray-900 border-t pt-2 mt-2">
+                <span>Total</span>
+                <span>฿{Number(booking.totalAmount).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Payment method</label>
+              <select
+                value={payMethod}
+                onChange={e => setPayMethod(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="CREDIT_CARD">Credit Card</option>
+                <option value="DEBIT_CARD">Debit Card</option>
+                <option value="QR_CODE">QR Code</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+                <option value="WALLET">Wallet</option>
+              </select>
+            </div>
+            {payError && <p className="text-sm text-red-600 mb-3">{payError}</p>}
+            <div className="flex gap-3">
+              <button onClick={reset} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={handlePay}
+                disabled={paying}
+                className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {paying ? 'Processing…' : `Pay ฿${Number(booking.totalAmount).toLocaleString()}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {stage === 'success' && (
+        <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-8 text-center">
+            <div className="text-5xl mb-4">🎉</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+            <p className="text-gray-500 text-sm mb-6">Your tickets are confirmed. Check your bookings history.</p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { reset(); onNavigate('history'); }}
+                className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
+              >
+                View My Bookings
+              </button>
+              <button onClick={reset} className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50">
+                Browse More Events
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

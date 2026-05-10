@@ -1,0 +1,25 @@
+# Logs
+*.log
+backend.log
+frontend.log
+backend-err.log
+frontend-err.log
+
+# Claude Code local settings
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Maven build output (also covered by ticketing/.gitignore)
+ticketing/target/
+
+# Node modules and build output (also covered by ticketing-ui/.gitignore)
+ticketing-ui/node_modules/
+ticketing-ui/dist/

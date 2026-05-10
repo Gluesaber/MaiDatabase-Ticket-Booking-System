@@ -1,0 +1,156 @@
+NUGGET TICKETS — FEATURE LOG
+Last updated: 2026-05-06
+============================
+
+TECH STACK
+----------
+- Backend:  Spring Boot 3.x / Java 23, Spring Security 6 (JWT, stateless), JPA/Hibernate, PostgreSQL
+- Frontend: React 18 + TypeScript, Vite, Tailwind CSS
+- Auth:     JWT stored in localStorage; roles: ADMIN, ORGANIZER, CUSTOMER
+
+HOW TO RUN
+----------
+Backend:  cd ticketing && mvn spring-boot:run          (port 8080)
+Frontend: cd ticketing-ui && npm run dev               (port 5173)
+If port 8080 is busy: netstat -ano | findstr :8080 → Stop-Process -Id <PID> -Force
+
+
+CURRENT FEATURES
+----------------
+
+1. AUTHENTICATION
+   - Register (email, password, firstName, lastName) → role defaults to CUSTOMER
+   - Login → returns JWT
+   - Role badge shown in header (ADMIN = red, ORGANIZER = purple, CUSTOMER = hidden)
+
+2. BROWSE EVENTS (Public / Customer)
+   - Lists all events that have at least one showtime
+   - Each card shows: title, tag pills, duration, rating, thumbnail, venue, date/time, price tiers
+   - Filter bar with multi-select tag pills (OR logic — show events matching any selected tag)
+   - "Book" button opens seat selection modal
+
+3. SEAT SELECTION & BOOKING (Customer)
+   - Fetches venue layout: sections by tier, individual seat availability
+   - Click seats to select/deselect; running total shown
+   - Submit creates a booking (PENDING status)
+   - Redirects to payment page
+
+4. PAYMENT
+   - Enter payment method + confirm amount
+   - Marks booking CONFIRMED
+   - Shows success screen
+
+5. BOOKING HISTORY (Customer)
+   - Lists all past bookings with event title, venue, date, ticket breakdown, total amount, status
+
+6. ORGANIZER DASHBOARD (ORGANIZER + ADMIN)
+   - Lists ALL events created by the logged-in organizer (including events with no showtimes yet)
+   - Create Event form: title, duration, tags (multi-select), rating (0–10), thumbnail URL
+   - "+ Add Showtime" button per event opens AddShowtimeModal:
+       · Venue dropdown (fetched from API)
+       · Date/time picker (OffsetDateTime)
+       · Ticket-per-person limit
+       · Dynamic tier rows: tier name, price, seat count
+       · Live capacity progress bar (turns red if total seats exceed venue capacity)
+       · Submit disabled while over capacity; server also validates
+   - Success / error banners
+
+7. DELETE (ADMIN only)
+   - Delete Event: removes event + all its showtimes (blocked if any showtime has booked tickets)
+   - Delete Showtime: removes a single showtime (blocked if it has booked tickets)
+   - Both show a browser confirm dialog before acting
+   - Constraint violations return a user-friendly error message in a red banner
+
+8. ADMIN — VENUE MANAGEMENT (ADMIN only)
+   - List all venues with name, capacity, address
+   - Create venue: name, capacity, address fields (addressLine, street, subDistrict, district, province, postalCode)
+   - Edit venue (full update)
+   - Delete venue
+   - "Manage Venues" link in header (visible to admin only)
+
+9. TAGS / EVENT TYPES
+   - Stored in EventTypes table; many-to-many with Events via EventTypeMappings
+   - Seeded tags: Comedy, Concert, Conference, Exhibition, Musical, Other, Sport
+   - Multi-select in event creation form (must pick at least one)
+   - Multi-select filter pills on the browse page
+
+10. ADVANCED FILTER SYSTEM (Browse Page)
+    - Server-side search via GET /api/events/search
+    - Filters: multi-select tags (OR), min/max price, start/end date
+    - Backend uses JPA Criteria API with correlated EXISTS subqueries (no duplicate rows)
+    - Client-side post-filter trims showtimes that don't match the requested date/price range
+    - Filter state synced to URL query params (shareable links)
+    - "No events found" empty state when filters return nothing
+
+11. EDIT EVENT (ORGANIZER + ADMIN)
+    - "Edit" button on every event card in the Organizer Dashboard
+    - Pre-filled modal: title, duration, tags, rating, thumbnail
+    - ORGANIZER can only edit their own events; ADMIN can edit any
+    - PUT /api/events/{id} — replaces tags list, updates all scalar fields
+
+12. EDIT SHOWTIME (ORGANIZER + ADMIN)
+    - "Edit" button on every showtime row in the Organizer Dashboard
+    - EditShowtimeModal: venue dropdown, date/time, ticket-per-person, full tier editing
+    - Existing tiers updated in-place (carry tierId); new tiers added; removed tiers blocked
+      if they have booked tickets
+    - Capacity bar turns red if tier seats exceed venue capacity; save button disabled
+    - PUT /api/showtimes/{id}
+
+13. CUSTOMER BOOKING CANCELLATION
+    - "Cancel" button on PENDING and CONFIRMED bookings in My Bookings page
+    - Browser confirm dialog before acting
+    - POST /api/bookings/{id}/cancel
+    - Optimistic UI update: status flips to CANCELLED instantly in the list
+    - Server blocks cancellation of already-CANCELLED or EXPIRED bookings
+
+14. ADMIN REPORTS — PEAK SALES
+    - "Reports" link in admin header → AdminReportsPage
+    - Report type dropdown (Peak Sales active; others show "Coming Soon")
+    - Date range filter (startDate / endDate) with Apply / Clear
+    - Recharts LineChart: X = hour of day (0–23), one colored line per day of week (Mon–Sun)
+    - Data table: hour rows × day columns, zeros shown as "—", column totals in footer
+    - Backend: native SQL EXTRACT(HOUR/DOW FROM show_schedules), pivoted in Java TreeMap
+    - GET /api/admin/reports/peak-sales?startDate=&endDate= (ADMIN only)
+
+
+RBAC SUMMARY
+------------
+Endpoint                             Allowed roles
+GET  /api/events                     Public (no auth)
+GET  /api/events/search              Public (no auth)
+POST /api/events                     ADMIN, ORGANIZER
+PUT  /api/events/{id}                ADMIN, ORGANIZER (organizer must own event)
+DELETE /api/events/{id}              ADMIN, ORGANIZER (organizer must own event)
+GET  /api/venues/*/layout            Any authenticated user
+GET  /api/venues, /api/venues/**     ADMIN, ORGANIZER
+POST /api/venues                     ADMIN
+PUT  /api/venues/**                  ADMIN
+DELETE /api/venues/**                ADMIN
+POST /api/showtimes                  ADMIN, ORGANIZER
+PUT  /api/showtimes/{id}             ADMIN, ORGANIZER (organizer must own event)
+DELETE /api/showtimes/{id}           ADMIN, ORGANIZER (organizer must own event)
+GET  /api/tags                       Public
+POST /api/bookings                   Any authenticated user
+GET  /api/bookings/history           Any authenticated user
+POST /api/bookings/{id}/cancel       Any authenticated user (must own booking)
+POST /api/payments                   Any authenticated user
+GET  /api/admin/reports/peak-sales   ADMIN only
+
+
+KNOWN GOTCHAS
+-------------
+- Spring Security rule order matters: specific paths must come before broad wildcards
+  (e.g. GET /api/venues/*/layout must be declared before GET /api/venues/**)
+- Events with zero showtimes: use api.getEvents() (map) for dashboard,
+  api.getShowtimes() (flatMap) for browse page — do NOT swap them
+- DataIntegrityViolationException from PostgreSQL ON DELETE RESTRICT is caught at
+  service layer and re-thrown as BookingValidationException (HTTP 422)
+- After any Java change, backend must be restarted (Maven does not hot-reload)
+- Booking.payment must use cascade = CascadeType.REMOVE (not ALL). Using CascadeType.ALL
+  caused Hibernate to cascade a spurious UPDATE to the Payment entity when saving a
+  cancelled booking. The fn_check_payment_amount PostgreSQL trigger then fired, saw all
+  tickets were CANCELLED (sum = 0) but payment.amount > 0, and raised an exception → 500.
+  PaymentService always saves payment independently via paymentRepository, so no
+  PERSIST/MERGE cascade from Booking is needed.
+- GlobalExceptionHandler now logs unexpected exceptions via @Slf4j so the real error
+  is always visible in the Spring Boot console (not just "An unexpected error occurred.").

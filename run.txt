@@ -1,0 +1,48 @@
+NUGGET TICKETS — HOW TO RUN
+============================
+
+PREREQUISITES
+-------------
+- Java 23+
+- Maven
+- Node.js + npm
+- PostgreSQL running locally
+
+
+START BACKEND
+-------------
+1. Open a terminal
+2. cd "C:\Users\hp\Nugget Claude\Database\ticketing"
+3. mvn spring-boot:run
+
+Backend runs on: http://localhost:8080
+
+If port 8080 is already in use:
+  netstat -ano | findstr :8080
+  Stop-Process -Id <PID> -Force
+Then run mvn spring-boot:run again.
+
+
+START FRONTEND
+--------------
+1. Open a second terminal
+2. cd "C:\Users\hp\Nugget Claude\Database\ticketing-ui"
+3. npm run dev
+
+Frontend runs on: http://localhost:5173
+Open that URL in your browser.
+
+
+ORDER MATTERS
+-------------
+Start the backend FIRST, then the frontend.
+Both must be running at the same time for the site to work.
+
+
+TEST ACCOUNTS (from seed.sql)
+------------------------------
+Role       Email                     Password
+---------- ------------------------- ----------
+ADMIN      admin@nugget.com          password
+ORGANIZER  organizer@nugget.com      password
+CUSTOMER   customer@nugget.com       password

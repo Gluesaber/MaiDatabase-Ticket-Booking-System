@@ -1,0 +1,136 @@
+============================================================
+  NUGGET TICKETS — DO LATER (Admin Completions)
+============================================================
+
+------------------------------------------------------------
+1. TOP-SELLING REGION REPORT
+------------------------------------------------------------
+Goal: Show which provinces/districts sell the most tickets.
+The report dropdown slot already exists in AdminReportsPage.tsx.
+
+BACKEND
+  a) Add `province` and `district` fields to the Venue entity/table.
+     - Add columns to the venues table (ALTER TABLE or migration).
+     - Add fields to VenueDetail DTO and Venue entity.
+     - Update CreateVenueRequest / UpdateVenueRequest to accept them.
+     - Update VenueManagementPage.tsx form to include province/district inputs.
+
+  b) Create DTO: RegionSalesPoint.java
+       record RegionSalesPoint(String province, String district, long ticketsSold, long revenue)
+
+  c) Add method to ReportService / ReportServiceImpl:
+       List<RegionSalesPoint> getRegionSales(LocalDate startDate, LocalDate endDate)
+     Native SQL:
+       SELECT v.province, v.district,
+              COUNT(tk.ticket_id)         AS tickets_sold,
+              SUM(tk.price)               AS revenue
+       FROM   tickets tk
+       JOIN   bookings b   ON b.booking_id  = tk.booking_id
+       JOIN   tickettiers tt ON tt.tier_id  = tk.tier_id
+       JOIN   showtimes st  ON st.showtime_id = tt.showtime_id
+       JOIN   venues v      ON v.venue_id   = st.venue_id
+       WHERE  b.status::text = 'CONFIRMED'
+         AND  (:startDate IS NULL OR st.show_schedules >= :startDate)
+         AND  (:endDate   IS NULL OR st.show_schedules <= :endDate)
+       GROUP BY v.province, v.district
+       ORDER BY tickets_sold DESC
+
+  d) Add endpoint to ReportController:
+       GET /api/admin/reports/region-sales?startDate=&endDate=
+
+FRONTEND
+  e) Add `getRegionSales(filters)` to ApiService.ts.
+  f) In AdminReportsPage.tsx, add "Top-Selling Region" to the report dropdown.
+  g) Render a Recharts BarChart (horizontal bars, one bar per province)
+     + a sortable table: Province | District | Tickets Sold | Revenue (฿).
+
+------------------------------------------------------------
+2. BOOKING-TO-CAPACITY ANALYSIS
+------------------------------------------------------------
+Goal: Help organizers see which showtimes are undersold
+      so they can run promotions or adjust pricing.
+
+BACKEND
+  a) Create DTO: ShowtimeCapacityPoint.java
+       record ShowtimeCapacityPoint(
+         long showtimeId, String eventTitle, String venueName,
+         OffsetDateTime showSchedules,
+         int totalSeats, int bookedSeats, int availableSeats,
+         double fillPercent
+       )
+
+  b) Add method to ReportService:
+       List<ShowtimeCapacityPoint> getCapacityAnalysis(LocalDate startDate, LocalDate endDate)
+     Native SQL (or JPQL):
+       SELECT st.showtime_id,
+              e.title,
+              v.name,
+              st.show_schedules,
+              SUM(tt.total_amount)                                  AS total_seats,
+              COUNT(tk.ticket_id) FILTER (
+                WHERE b.status::text IN ('CONFIRMED','PENDING'))    AS booked_seats
+       FROM   showtimes st
+       JOIN   events  e  ON e.event_id   = st.event_id
+       JOIN   venues  v  ON v.venue_id   = st.venue_id
+       JOIN   tickettiers tt ON tt.showtime_id = st.showtime_id
+       LEFT JOIN tickets tk  ON tk.tier_id     = tt.tier_id
+       LEFT JOIN bookings b  ON b.booking_id   = tk.booking_id
+       WHERE  (:startDate IS NULL OR st.show_schedules >= :startDate)
+         AND  (:endDate   IS NULL OR st.show_schedules <= :endDate)
+       GROUP BY st.showtime_id, e.title, v.name, st.show_schedules
+       ORDER BY fill_percent ASC   -- worst fill first
+
+  c) Add endpoint to ReportController:
+       GET /api/admin/reports/capacity?startDate=&endDate=
+
+FRONTEND
+  d) Add `getCapacityAnalysis(filters)` to ApiService.ts.
+  e) In AdminReportsPage.tsx, add "Booking-to-Capacity" to report dropdown.
+  f) Render a table: Event | Venue | Date | Booked | Total | Fill %
+     with a mini progress bar in the Fill % column.
+     Color-code: <50% red, 50–80% yellow, >80% green.
+  g) Optional: add a threshold filter ("show only shows below X% fill").
+
+------------------------------------------------------------
+3. USER MANAGEMENT PAGE
+------------------------------------------------------------
+Goal: Admin can list all users, view their bookings, and
+      deactivate/reactivate accounts.
+
+BACKEND
+  a) Add `active` boolean field (default true) to User entity/table.
+     - Migration: ALTER TABLE users ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE;
+     - Update UserPrincipal / JwtAuthFilter to reject tokens for inactive users
+       (load user, check active flag, throw 401 if false).
+
+  b) Create DTOs:
+       UserSummary.java:
+         record UserSummary(long userId, String email, String firstName, String lastName,
+                            String role, boolean active, int totalBookings)
+       UserDetail.java  — UserSummary + List<BookingHistoryItem> bookings
+
+  c) Create UserAdminService + UserAdminServiceImpl:
+       List<UserSummary> getAllUsers()
+       UserDetail        getUserDetail(Long userId)
+       void              setUserActive(Long userId, boolean active)
+
+  d) Create UserAdminController  @RequestMapping("/api/admin/users")
+       GET  /              → getAllUsers()
+       GET  /{id}          → getUserDetail(id)
+       POST /{id}/deactivate → setUserActive(id, false)
+       POST /{id}/activate   → setUserActive(id, true)
+     All endpoints @PreAuthorize("hasRole('ADMIN')")
+
+FRONTEND
+  e) Add `getUsers()`, `getUserDetail(id)`, `deactivateUser(id)`, `activateUser(id)` to ApiService.ts.
+  f) Create UserManagementPage.tsx:
+     - Table: Name | Email | Role | Bookings | Status | Actions
+     - Click row → slide-out panel (or modal) showing full booking history for that user.
+     - Deactivate/Activate toggle button per row; confirm before deactivating.
+     - Search/filter bar: filter by name, email, or role.
+  g) Add "Manage Users" link in the admin header (OrganizerDashboardPage.tsx nav bar).
+  h) Add 'admin-users' case to the page router in App.tsx (or wherever navigation is handled).
+
+============================================================
+  END OF DO-LATER LIST
+============================================================
