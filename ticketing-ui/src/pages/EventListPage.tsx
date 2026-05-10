@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import type { Showtime, BookingResponse, TagDto } from '../types';
+import type { Showtime, BookingResponse, TagDto, VenueDetail } from '../types';
 import { api } from '../services/ApiService';
 import { EventCard } from '../components/EventCard';
+import type { GroupedEvent } from '../components/EventCard';
+import { EventDetailsModal } from '../components/EventDetailsModal';
 import { SeatSelection } from '../components/SeatSelection';
 import { PaymentCountdownBanner } from '../components/PaymentCountdownBanner';
 import { FilterBar, EMPTY_FILTERS } from '../components/FilterBar';
@@ -12,37 +14,57 @@ interface Props {
   onNavigate: (page: string) => void;
 }
 
-type Stage = 'list' | 'seats' | 'payment' | 'success';
+type Stage = 'list' | 'details' | 'seats' | 'payment' | 'success';
+
+function groupByEvent(showtimes: Showtime[]): GroupedEvent[] {
+  const map = new Map<number, GroupedEvent>();
+  for (const s of showtimes) {
+    const id = s.event.eventId;
+    if (!map.has(id)) map.set(id, { event: s.event, showtimes: [] });
+    map.get(id)!.showtimes.push(s);
+  }
+  return [...map.values()];
+}
 
 function parseFiltersFromUrl(): FilterValues {
   const p = new URLSearchParams(window.location.search);
-  const tagParam = p.get('tags');
+  const tagParam    = p.get('tags');
+  const ratingParam = p.get('ratings');
+  const venueParam  = p.get('venueIds');
   return {
-    tagIds: tagParam ? tagParam.split(',').map(Number).filter(Boolean) : [],
-    minPrice: p.get('minPrice') ?? '',
-    maxPrice: p.get('maxPrice') ?? '',
+    title:     p.get('title') ?? '',
+    tagIds:    tagParam    ? tagParam.split(',').map(Number).filter(Boolean)   : [],
+    ratings:   ratingParam ? ratingParam.split(',').filter(Boolean)            : [],
+    venueIds:  venueParam  ? venueParam.split(',').map(Number).filter(Boolean) : [],
+    minPrice:  p.get('minPrice')  ?? '',
+    maxPrice:  p.get('maxPrice')  ?? '',
     startDate: p.get('startDate') ?? '',
-    endDate: p.get('endDate') ?? '',
+    endDate:   p.get('endDate')   ?? '',
   };
 }
 
 function filtersToSearch(f: FilterValues): string {
   const p = new URLSearchParams();
-  if (f.tagIds.length > 0) p.set('tags', f.tagIds.join(','));
-  if (f.minPrice) p.set('minPrice', f.minPrice);
-  if (f.maxPrice) p.set('maxPrice', f.maxPrice);
-  if (f.startDate) p.set('startDate', f.startDate);
-  if (f.endDate) p.set('endDate', f.endDate);
+  if (f.title)              p.set('title',    f.title);
+  if (f.tagIds.length > 0)  p.set('tags',     f.tagIds.join(','));
+  if (f.ratings.length > 0) p.set('ratings',  f.ratings.join(','));
+  if (f.venueIds.length > 0) p.set('venueIds', f.venueIds.join(','));
+  if (f.minPrice)           p.set('minPrice', f.minPrice);
+  if (f.maxPrice)           p.set('maxPrice', f.maxPrice);
+  if (f.startDate)          p.set('startDate', f.startDate);
+  if (f.endDate)            p.set('endDate',   f.endDate);
   const qs = p.toString();
   return qs ? `?${qs}` : window.location.pathname;
 }
 
 export function EventListPage({ onNavigate }: Props) {
   const { user, logout } = useAuth();
-  const [showtimes, setShowtimes] = useState<Showtime[]>([]);
+  const [eventGroups, setEventGroups] = useState<GroupedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterValues>(parseFiltersFromUrl);
   const [allTags, setAllTags] = useState<TagDto[]>([]);
+  const [allVenues, setAllVenues] = useState<VenueDetail[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<GroupedEvent | null>(null);
   const [selected, setSelected] = useState<Showtime | null>(null);
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [stage, setStage] = useState<Stage>('list');
@@ -53,18 +75,22 @@ export function EventListPage({ onNavigate }: Props) {
   function loadShowtimes(f: FilterValues) {
     setLoading(true);
     api.searchEvents({
-      tagIds: f.tagIds.length > 0 ? f.tagIds : undefined,
+      title:    f.title    || undefined,
+      tagIds:   f.tagIds.length   > 0 ? f.tagIds   : undefined,
+      ratings:  f.ratings.length  > 0 ? f.ratings  : undefined,
+      venueIds: f.venueIds.length > 0 ? f.venueIds : undefined,
       minPrice: f.minPrice || undefined,
       maxPrice: f.maxPrice || undefined,
       startDate: f.startDate || undefined,
-      endDate: f.endDate || undefined,
+      endDate:   f.endDate   || undefined,
     })
-      .then(setShowtimes)
+      .then(data => setEventGroups(groupByEvent(data)))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     api.getTags().then(setAllTags);
+    api.getVenues().then(setAllVenues);
     loadShowtimes(filters);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -100,6 +126,7 @@ export function EventListPage({ onNavigate }: Props) {
   }
 
   function reset() {
+    setSelectedGroup(null);
     setSelected(null);
     setBooking(null);
     setStage('list');
@@ -140,35 +167,40 @@ export function EventListPage({ onNavigate }: Props) {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <FilterBar allTags={allTags} initial={filters} onApply={handleApply} />
+        <FilterBar allTags={allTags} allVenues={allVenues} initial={filters} onApply={handleApply} />
 
         {loading ? (
           <div className="text-center py-20 text-gray-400">Loading events…</div>
-        ) : showtimes.length === 0 ? (
+        ) : eventGroups.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <p className="text-lg mb-2">No events found</p>
             <p className="text-sm">Try adjusting or clearing the filters.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {showtimes.map(s => (
+            {eventGroups.map(g => (
               <EventCard
-                key={s.showtimeId}
-                showtime={s}
-                onSelect={st => {
-                  if (!user) { onNavigate('login'); return; }
-                  if (user.role !== 'customer') {
-                    alert('Only customers can book tickets. Use your Dashboard to manage events.');
-                    return;
-                  }
-                  setSelected(st);
-                  setStage('seats');
+                key={g.event.eventId}
+                group={g}
+                onViewDetails={group => {
+                  setSelectedGroup(group);
+                  setStage('details');
                 }}
               />
             ))}
           </div>
         )}
       </main>
+
+      {stage === 'details' && selectedGroup && (
+        <EventDetailsModal
+          group={selectedGroup}
+          isLoggedIn={!!user}
+          isCustomer={user?.role === 'customer'}
+          onBook={showtime => { setSelected(showtime); setStage('seats'); }}
+          onClose={reset}
+        />
+      )}
 
       {stage === 'seats' && selected && (
         <SeatSelection

@@ -8,5 +8,6 @@ public record EventResponse(
         Integer durationMinutes,
         String rating,
         String thumbnail,
+        String description,
         List<TagDto> tags,
         List<ShowtimeResponse> showtimes) {}

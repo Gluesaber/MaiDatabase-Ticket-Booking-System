@@ -14,5 +14,6 @@ public record UpdateEventRequest(
         @Pattern(regexp = "^(G|PG|PG-13|R|NC-17)$", message = "Rating must be one of: G, PG, PG-13, R, NC-17")
         String rating,
         String thumbnail,
+        String description,
         @NotEmpty List<Long> tagIds
 ) {}

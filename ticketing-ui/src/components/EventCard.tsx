@@ -1,9 +1,14 @@
 import { useState } from 'react';
-import type { Showtime } from '../types';
+import type { EventInfo, Showtime } from '../types';
+
+export interface GroupedEvent {
+  event: EventInfo;
+  showtimes: Showtime[];
+}
 
 interface Props {
-  showtime: Showtime;
-  onSelect: (showtime: Showtime) => void;
+  group: GroupedEvent;
+  onViewDetails: (group: GroupedEvent) => void;
 }
 
 const TAG_COLORS: Record<string, string> = {
@@ -35,15 +40,16 @@ function EventPlaceholder({ tags, title }: { tags: string[]; title: string }) {
   );
 }
 
-export function EventCard({ showtime, onSelect }: Props) {
-  const { event, venue, showSchedules, tiers } = showtime;
+export function EventCard({ group, onViewDetails }: Props) {
+  const { event, showtimes } = group;
   const [imgError, setImgError] = useState(false);
-  const date = new Date(showSchedules);
-  const minPrice = Math.min(...tiers.map(t => t.price));
   const tagNames = event.tags.map(t => t.typeName);
+  const showtimeCount = showtimes.length;
+  const allSoldOut = showtimes.every(s => s.tiers.every(t => t.available === 0));
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+      {/* Thumbnail */}
       {event.thumbnail && !imgError ? (
         <img
           src={event.thumbnail}
@@ -54,8 +60,9 @@ export function EventCard({ showtime, onSelect }: Props) {
       ) : (
         <EventPlaceholder tags={tagNames} title={event.title} />
       )}
-      <div className="p-4">
-        {/* Tag pills */}
+
+      <div className="p-4 flex flex-col flex-1">
+        {/* Tags */}
         <div className="flex flex-wrap gap-1 mb-2">
           {event.tags.length === 0 ? (
             <span className="text-xs text-gray-400 italic">No tags</span>
@@ -63,41 +70,44 @@ export function EventCard({ showtime, onSelect }: Props) {
             event.tags.map(tag => (
               <span
                 key={tag.typeId}
-                className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
-                  TAG_COLORS[tag.typeName] ?? 'bg-indigo-100 text-indigo-700'
-                }`}
+                className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${TAG_COLORS[tag.typeName] ?? 'bg-indigo-100 text-indigo-700'}`}
               >
                 {tag.typeName}
               </span>
             ))
           )}
         </div>
+
+        {/* Title */}
         <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-1">{event.title}</h3>
-        <p className="text-sm text-gray-500 mb-1">{venue.name}</p>
-        <p className="text-sm text-gray-500 mb-3">
-          {date.toLocaleDateString('en-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-          {' · '}
-          {date.toLocaleTimeString('en-TH', { hour: '2-digit', minute: '2-digit' })}
-        </p>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xs text-gray-400">From</span>
-            <p className="text-indigo-600 font-bold">฿{minPrice.toLocaleString()}</p>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            {event.rating && (
-              <span className="border border-gray-400 text-gray-600 text-xs font-bold px-1.5 py-0.5 rounded">
-                {event.rating}
-              </span>
-            )}
-            <span>{event.durationMinutes} min</span>
-          </div>
+
+        {/* Rating + duration */}
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+          {event.rating && (
+            <span className="border border-gray-400 text-gray-600 text-xs font-bold px-1.5 py-0.5 rounded">
+              {event.rating}
+            </span>
+          )}
+          <span>{event.durationMinutes} min</span>
+          <span className="ml-auto text-xs text-indigo-600 font-medium">
+            {showtimeCount} showtime{showtimeCount !== 1 ? 's' : ''}
+          </span>
         </div>
+
+        {/* Description preview */}
+        {event.description ? (
+          <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed mb-3">{event.description}</p>
+        ) : (
+          <p className="text-sm text-gray-400 italic mb-3">No description.</p>
+        )}
+
+        {/* CTA */}
         <button
-          onClick={() => onSelect(showtime)}
-          className="mt-3 w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+          onClick={() => onViewDetails(group)}
+          disabled={allSoldOut}
+          className="mt-auto w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Select Seats
+          {allSoldOut ? 'Sold Out' : 'View Details'}
         </button>
       </div>
     </div>

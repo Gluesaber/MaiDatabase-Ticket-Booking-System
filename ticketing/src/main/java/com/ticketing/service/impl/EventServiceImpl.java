@@ -82,6 +82,7 @@ public class EventServiceImpl implements EventService {
                 .durationMinutes(request.durationMinutes())
                 .rating(request.rating())
                 .thumbnail(request.thumbnail())
+                .description(request.description())
                 .createdBy(organizer)
                 .tags(new HashSet<>(tags))
                 .build();
@@ -109,6 +110,7 @@ public class EventServiceImpl implements EventService {
         event.setDurationMinutes(request.durationMinutes());
         event.setRating(request.rating());
         event.setThumbnail(request.thumbnail());
+        event.setDescription(request.description());
         event.getTags().clear();
         event.getTags().addAll(tags);
 
@@ -140,7 +142,10 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public List<EventResponse> searchEvents(
+            String title,
             List<Long> tagIds,
+            List<String> ratings,
+            List<Long> venueIds,
             BigDecimal minPrice,
             BigDecimal maxPrice,
             LocalDate startDate,
@@ -151,7 +156,10 @@ public class EventServiceImpl implements EventService {
                 ? endDate.atTime(23, 59, 59).atOffset(ZoneOffset.UTC) : null;
 
         Specification<Event> spec = EventSpecification.withFilters(
+                (title != null && !title.isBlank()) ? title : null,
                 (tagIds != null && !tagIds.isEmpty()) ? tagIds : null,
+                (ratings != null && !ratings.isEmpty()) ? ratings : null,
+                (venueIds != null && !venueIds.isEmpty()) ? venueIds : null,
                 minPrice, maxPrice, start, end);
         return eventRepository.findAll(spec).stream().map(this::toResponse).toList();
     }
@@ -169,7 +177,7 @@ public class EventServiceImpl implements EventService {
         return new EventResponse(
                 event.getEventId(), event.getTitle(),
                 event.getDurationMinutes(), event.getRating(), event.getThumbnail(),
-                tags, showtimes);
+                event.getDescription(), tags, showtimes);
     }
 
     private ShowtimeResponse toShowtimeResponse(Showtime s) {

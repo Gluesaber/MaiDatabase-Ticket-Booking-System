@@ -16,6 +16,7 @@ interface EventGroup {
   durationMinutes: number;
   rating: number;
   thumbnail: string;
+  description: string;
   tags: { typeId: number; typeName: string }[];
   showtimes: Showtime[];
 }
@@ -30,14 +31,14 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
 
   // Create event state
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const [form, setForm] = useState({ title: '', durationMinutes: '', rating: '', thumbnail: '' });
+  const [form, setForm] = useState({ title: '', durationMinutes: '', rating: '', thumbnail: '', description: '' });
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
   // Edit event state
   const [editingEvent, setEditingEvent] = useState<EventGroup | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', durationMinutes: '', rating: '', thumbnail: '' });
+  const [editForm, setEditForm] = useState({ title: '', durationMinutes: '', rating: '', thumbnail: '', description: '' });
   const [editTagIds, setEditTagIds] = useState<number[]>([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editFormError, setEditFormError] = useState('');
@@ -93,6 +94,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
       durationMinutes: String(group.durationMinutes),
       rating: String(group.rating),
       thumbnail: group.thumbnail ?? '',
+      description: group.description ?? '',
     });
     setEditTagIds(group.tags.map(t => t.typeId));
     setEditFormError('');
@@ -112,6 +114,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
         durationMinutes: Number(editForm.durationMinutes),
         rating: editForm.rating,
         thumbnail: editForm.thumbnail,
+        description: editForm.description,
         tagIds: editTagIds,
       });
       setSuccess(`"${editForm.title}" updated!`);
@@ -147,11 +150,12 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
         durationMinutes: Number(form.durationMinutes),
         rating: form.rating,
         thumbnail: form.thumbnail,
+        description: form.description,
         tagIds: selectedTagIds,
       });
       setSuccess(`Event "${form.title}" created!`);
       setShowCreateEvent(false);
-      setForm({ title: '', durationMinutes: '', rating: '', thumbnail: '' });
+      setForm({ title: '', durationMinutes: '', rating: '', thumbnail: '', description: '' });
       setSelectedTagIds([]);
       reload();
     } catch (err: unknown) {
@@ -178,10 +182,16 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
             {user?.role === 'admin' && (
               <>
                 <button
+                  onClick={() => onNavigate('admin-overview')}
+                  className="text-sm text-indigo-600 hover:underline font-medium"
+                >
+                  Overview
+                </button>
+                <button
                   onClick={() => onNavigate('admin-venues')}
                   className="text-sm text-indigo-600 hover:underline font-medium"
                 >
-                  Manage Venues
+                  Venues
                 </button>
                 <button
                   onClick={() => onNavigate('admin-reports')}
@@ -234,7 +244,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
         {/* Create Event Modal */}
         {showCreateEvent && (
           <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 overflow-y-auto max-h-[90vh]">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Create New Event</h3>
               {formError && (
                 <p className="text-sm text-red-600 mb-3 bg-red-50 px-3 py-2 rounded">{formError}</p>
@@ -280,6 +290,20 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    rows={5}
+                    maxLength={3000}
+                    value={form.description}
+                    onChange={e => setField('description', e.target.value)}
+                    placeholder="Provide a detailed description of your event, including what attendees can expect, highlights, or special instructions…"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                  />
+                  <p className="text-xs text-gray-400 mt-0.5 text-right">{form.description.length}/3000</p>
+                </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setShowCreateEvent(false)}
                     className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50">
@@ -298,7 +322,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
         {/* Edit Event Modal */}
         {editingEvent && (
           <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 overflow-y-auto max-h-[90vh]">
               <h3 className="text-lg font-bold text-gray-900 mb-1">Edit Event</h3>
               <p className="text-gray-500 text-sm mb-4">{editingEvent.title}</p>
               {editFormError && (
@@ -344,6 +368,20 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                     placeholder="https://..."
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    rows={5}
+                    maxLength={3000}
+                    value={editForm.description}
+                    onChange={e => setEditField('description', e.target.value)}
+                    placeholder="Provide a detailed description of your event, including what attendees can expect, highlights, or special instructions…"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                  />
+                  <p className="text-xs text-gray-400 mt-0.5 text-right">{editForm.description.length}/3000</p>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setEditingEvent(null)}

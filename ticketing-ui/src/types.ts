@@ -23,6 +23,7 @@ export interface EventInfo {
   durationMinutes: number;
   rating: string;
   thumbnail: string;
+  description?: string;
 }
 
 export interface Venue {

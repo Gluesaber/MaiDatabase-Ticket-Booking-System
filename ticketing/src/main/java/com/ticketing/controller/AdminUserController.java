@@ -11,6 +11,7 @@ import com.ticketing.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class AdminUserController {
     private final RoleRepository roleRepository;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<UserDto>> listUsers() {
         List<UserDto> users = userRepository.findAll().stream()
                 .map(u -> new UserDto(
@@ -35,6 +37,7 @@ public class AdminUserController {
     }
 
     @PutMapping("/{id}/role")
+    @Transactional
     public ResponseEntity<UserDto> updateRole(
             @PathVariable Long id,
             @Valid @RequestBody UpdateRoleRequest request) {

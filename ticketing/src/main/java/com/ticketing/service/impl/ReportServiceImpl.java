@@ -1,9 +1,12 @@
 package com.ticketing.service.impl;
 
 import com.ticketing.dto.report.CapacityPoint;
+import com.ticketing.dto.report.OverviewResponse;
 import com.ticketing.dto.report.PeakSalesPoint;
+import com.ticketing.dto.report.RecentBookingDto;
 import com.ticketing.dto.report.TopEventPoint;
 import com.ticketing.dto.report.TopRegionPoint;
+import com.ticketing.dto.report.UpcomingShowtimeDto;
 import com.ticketing.service.ReportService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -188,6 +191,84 @@ public class ReportServiceImpl implements ReportService {
                         ((Number) r[1]).longValue(),
                         (BigDecimal) r[2]))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OverviewResponse getOverview() {
+        // Total revenue from confirmed bookings
+        BigDecimal totalRevenue = (BigDecimal) em.createNativeQuery(
+                "SELECT COALESCE(SUM(t.price), 0) FROM bookings b JOIN tickets t ON t.booking_id = b.booking_id WHERE b.status::text = 'CONFIRMED'"
+        ).getSingleResult();
+
+        // Tickets sold this month
+        long ticketsSoldThisMonth = ((Number) em.createNativeQuery(
+                "SELECT COUNT(t.ticket_id) FROM bookings b JOIN tickets t ON t.booking_id = b.booking_id WHERE b.status::text = 'CONFIRMED' AND DATE_TRUNC('month', b.timestamp) = DATE_TRUNC('month', NOW())"
+        ).getSingleResult()).longValue();
+
+        // Active bookings (PENDING or CONFIRMED)
+        long activeBookings = ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM bookings WHERE status::text IN ('PENDING','CONFIRMED')"
+        ).getSingleResult()).longValue();
+
+        // Total users
+        long totalUsers = ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM users"
+        ).getSingleResult()).longValue();
+
+        // Recent bookings — last 10
+        @SuppressWarnings("unchecked")
+        List<Object[]> recentRows = em.createNativeQuery("""
+                SELECT b.booking_id, u.first_name || ' ' || u.last_name AS customer_name,
+                       e.title AS event_title, b.status::text, COALESCE(SUM(t.price), 0) AS total_amount, b.timestamp
+                FROM bookings b
+                JOIN users       u  ON u.user_id   = b.user_id
+                JOIN tickets     t  ON t.booking_id = b.booking_id
+                JOIN tickettiers tt ON tt.tier_id   = t.tier_id
+                JOIN showtimes   s  ON s.showtime_id = tt.showtime_id
+                JOIN events      e  ON e.event_id   = s.event_id
+                GROUP BY b.booking_id, customer_name, event_title, b.status, b.timestamp
+                ORDER BY b.timestamp DESC
+                LIMIT 10
+                """).getResultList();
+
+        List<RecentBookingDto> recentBookings = recentRows.stream().map(r -> new RecentBookingDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                (String) r[2],
+                (String) r[3],
+                (BigDecimal) r[4],
+                toOffsetDateTime(r[5])
+        )).toList();
+
+        // Upcoming showtimes — next 8
+        @SuppressWarnings("unchecked")
+        List<Object[]> upcomingRows = em.createNativeQuery("""
+                SELECT s.showtime_id, e.title AS event_title, v.name AS venue_name, s.show_schedules,
+                       SUM(tt.total_amount) AS total_capacity,
+                       COUNT(tk.ticket_id)  AS booked_tickets
+                FROM showtimes   s
+                JOIN events      e  ON e.event_id    = s.event_id
+                JOIN venues      v  ON v.venue_id    = s.venue_id
+                JOIN tickettiers tt ON tt.showtime_id = s.showtime_id
+                LEFT JOIN tickets tk ON tk.tier_id   = tt.tier_id AND tk.status::text != 'CANCELLED'
+                WHERE s.show_schedules > NOW()
+                GROUP BY s.showtime_id, event_title, venue_name, s.show_schedules
+                ORDER BY s.show_schedules ASC
+                LIMIT 8
+                """).getResultList();
+
+        List<UpcomingShowtimeDto> upcomingShowtimes = upcomingRows.stream().map(r -> new UpcomingShowtimeDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                (String) r[2],
+                toOffsetDateTime(r[3]),
+                ((Number) r[4]).longValue(),
+                ((Number) r[5]).longValue()
+        )).toList();
+
+        return new OverviewResponse(totalRevenue, ticketsSoldThisMonth, activeBookings, totalUsers,
+                recentBookings, upcomingShowtimes);
     }
 
     private OffsetDateTime toOffsetDateTime(Object obj) {

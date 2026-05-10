@@ -39,12 +39,15 @@ public class EventController {
 
     @GetMapping("/search")
     public ResponseEntity<List<EventResponse>> searchEvents(
+            @RequestParam(required = false) String title,
             @RequestParam(required = false) List<Long> tags,
+            @RequestParam(required = false) List<String> ratings,
+            @RequestParam(required = false) List<Long> venueIds,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return ResponseEntity.ok(eventService.searchEvents(tags, minPrice, maxPrice, startDate, endDate));
+        return ResponseEntity.ok(eventService.searchEvents(title, tags, ratings, venueIds, minPrice, maxPrice, startDate, endDate));
     }
 
     @GetMapping("/{id}")

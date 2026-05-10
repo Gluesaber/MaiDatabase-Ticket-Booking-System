@@ -47,6 +47,7 @@ CREATE TABLE Events (
     duration_minutes INT           NOT NULL CHECK (duration_minutes > 0),
     rating           VARCHAR(5)    CHECK (rating IN ('G','PG','PG-13','R','NC-17')),
     thumbnail        TEXT,
+    description      TEXT,
     created_by       BIGINT        NOT NULL REFERENCES Users(user_id) ON DELETE RESTRICT
 );
 

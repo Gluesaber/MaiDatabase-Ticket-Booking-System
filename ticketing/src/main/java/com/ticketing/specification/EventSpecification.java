@@ -14,7 +14,10 @@ public class EventSpecification {
     private EventSpecification() {}
 
     public static Specification<Event> withFilters(
+            String title,
             List<Long> tagIds,
+            List<String> ratings,
+            List<Long> venueIds,
             BigDecimal minPrice,
             BigDecimal maxPrice,
             OffsetDateTime startDate,
@@ -29,6 +32,12 @@ public class EventSpecification {
             hasShowtime.select(cb.literal(1)).where(cb.equal(hsRoot.get("event"), root));
             predicates.add(cb.exists(hasShowtime));
 
+            // Title: case-insensitive partial match
+            if (title != null && !title.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("title")),
+                        "%" + title.trim().toLowerCase() + "%"));
+            }
+
             // Tags: event has at least one of the given tags (OR logic)
             if (tagIds != null && !tagIds.isEmpty()) {
                 Subquery<Integer> tagSub = query.subquery(Integer.class);
@@ -36,6 +45,21 @@ public class EventSpecification {
                 Join<Event, EventType> tagJoin = tagRoot.join("tags");
                 tagSub.select(cb.literal(1)).where(tagJoin.get("typeId").in(tagIds));
                 predicates.add(cb.exists(tagSub));
+            }
+
+            // Age rating: event rating is one of the selected values
+            if (ratings != null && !ratings.isEmpty()) {
+                predicates.add(root.get("rating").in(ratings));
+            }
+
+            // Venue: event has at least one showtime at any selected venue
+            if (venueIds != null && !venueIds.isEmpty()) {
+                Subquery<Integer> venueSub = query.subquery(Integer.class);
+                Root<Showtime> vsRoot = venueSub.from(Showtime.class);
+                venueSub.select(cb.literal(1)).where(
+                        cb.equal(vsRoot.get("event"), root),
+                        vsRoot.get("venue").get("venueId").in(venueIds));
+                predicates.add(cb.exists(venueSub));
             }
 
             // Price: event has a showtime with a tier within the price range

@@ -32,6 +32,9 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String thumbnail;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;

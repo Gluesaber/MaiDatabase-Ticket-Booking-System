@@ -8,15 +8,17 @@ import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { AdminVenuePage } from './pages/AdminVenuePage';
 import { AdminReportsPage } from './pages/AdminReportsPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
+import { AdminOverviewPage } from './pages/AdminOverviewPage';
 
-type Page = 'events' | 'login' | 'register' | 'history' | 'dashboard' | 'admin-venues' | 'admin-reports' | 'admin-users';
+type Page = 'events' | 'login' | 'register' | 'history' | 'dashboard' | 'admin-venues' | 'admin-reports' | 'admin-users' | 'admin-overview';
 
 function Router() {
   const { user } = useAuth();
 
   const defaultPage = (): Page => {
     if (!user) return 'events';
-    if (user.role === 'organizer' || user.role === 'admin') return 'dashboard';
+    if (user.role === 'admin') return 'admin-overview';
+    if (user.role === 'organizer') return 'dashboard';
     return 'events';
   };
 
@@ -47,6 +49,11 @@ function Router() {
   if (page === 'admin-users') {
     if (!user || user.role !== 'admin') { setPage('dashboard'); return null; }
     return <AdminUsersPage onNavigate={navigate} />;
+  }
+
+  if (page === 'admin-overview') {
+    if (!user || user.role !== 'admin') { setPage('dashboard'); return null; }
+    return <AdminOverviewPage onNavigate={navigate} />;
   }
 
   if (page === 'dashboard') {

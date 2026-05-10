@@ -16,5 +16,5 @@ public interface EventService {
     EventResponse createEvent(CreateEventRequest request, Long createdByUserId);
     EventResponse updateEvent(Long eventId, UpdateEventRequest request, UserPrincipal principal);
     void deleteEvent(Long eventId, UserPrincipal principal);
-    List<EventResponse> searchEvents(List<Long> tagIds, BigDecimal minPrice, BigDecimal maxPrice, LocalDate startDate, LocalDate endDate);
+    List<EventResponse> searchEvents(String title, List<Long> tagIds, List<String> ratings, List<Long> venueIds, BigDecimal minPrice, BigDecimal maxPrice, LocalDate startDate, LocalDate endDate);
 }

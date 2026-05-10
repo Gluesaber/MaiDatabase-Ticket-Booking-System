@@ -1,6 +1,7 @@
 package com.ticketing.controller;
 
 import com.ticketing.dto.report.CapacityPoint;
+import com.ticketing.dto.report.OverviewResponse;
 import com.ticketing.dto.report.PeakSalesPoint;
 import com.ticketing.dto.report.TopEventPoint;
 import com.ticketing.dto.report.TopRegionPoint;
@@ -56,5 +57,10 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return ResponseEntity.ok(reportService.getTopEventsByTickets(startDate, endDate));
+    }
+
+    @GetMapping("/overview")
+    public ResponseEntity<OverviewResponse> overview() {
+        return ResponseEntity.ok(reportService.getOverview());
     }
 }

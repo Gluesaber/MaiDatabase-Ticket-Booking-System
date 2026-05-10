@@ -1,6 +1,7 @@
 package com.ticketing.service;
 
 import com.ticketing.dto.report.CapacityPoint;
+import com.ticketing.dto.report.OverviewResponse;
 import com.ticketing.dto.report.PeakSalesPoint;
 import com.ticketing.dto.report.TopEventPoint;
 import com.ticketing.dto.report.TopRegionPoint;
@@ -14,4 +15,5 @@ public interface ReportService {
     List<CapacityPoint>   getCapacity(LocalDate startDate, LocalDate endDate);
     List<TopEventPoint>   getTopEventsByIncome(LocalDate startDate, LocalDate endDate);
     List<TopEventPoint>   getTopEventsByTickets(LocalDate startDate, LocalDate endDate);
+    OverviewResponse      getOverview();
 }

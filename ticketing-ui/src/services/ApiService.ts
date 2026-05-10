@@ -33,6 +33,7 @@ interface BackendEvent {
   eventId: number; title: string;
   tags: { typeId: number; typeName: string }[];
   durationMinutes: number; rating: number; thumbnail: string;
+  description: string;
   showtimes: BackendShowtime[];
 }
 interface BackendShowtime {
@@ -72,6 +73,7 @@ class ApiService {
       event: {
         eventId: e.eventId, title: e.title, tags: e.tags,
         durationMinutes: e.durationMinutes, rating: e.rating, thumbnail: e.thumbnail,
+        description: e.description,
       },
       venue: s.venue,
       showSchedules: s.showSchedules,
@@ -91,14 +93,20 @@ class ApiService {
 
   /** Server-side filtered search for the browse page. */
   async searchEvents(filters: {
+    title?: string;
     tagIds?: number[];
+    ratings?: string[];
+    venueIds?: number[];
     minPrice?: string;
     maxPrice?: string;
     startDate?: string;
     endDate?: string;
   }): Promise<Showtime[]> {
     const qs = new URLSearchParams();
+    if (filters.title) qs.set('title', filters.title);
     filters.tagIds?.forEach(id => qs.append('tags', String(id)));
+    filters.ratings?.forEach(r => qs.append('ratings', r));
+    filters.venueIds?.forEach(id => qs.append('venueIds', String(id)));
     if (filters.minPrice) qs.set('minPrice', filters.minPrice);
     if (filters.maxPrice) qs.set('maxPrice', filters.maxPrice);
     if (filters.startDate) qs.set('startDate', filters.startDate);
@@ -106,9 +114,8 @@ class ApiService {
     const events = await request<BackendEvent[]>(`/events/search?${qs}`);
     let showtimes = events.flatMap(e => e.showtimes.map(s => this.mapShowtime(e, s)));
 
-    // Trim showtimes to only those that actually satisfy the active filters.
-    // The backend guarantees the event matches, but returns all its showtimes;
-    // we keep only the ones within the requested range.
+    // Trim showtimes that don't satisfy the active filters.
+    // Backend matches at the event level; we keep only the qualifying showtimes.
     if (filters.startDate)
       showtimes = showtimes.filter(s => s.showSchedules.substring(0, 10) >= filters.startDate!);
     if (filters.endDate)
@@ -121,12 +128,15 @@ class ApiService {
       const max = Number(filters.maxPrice);
       showtimes = showtimes.filter(s => s.tiers.some(t => t.price <= max));
     }
+    if (filters.venueIds && filters.venueIds.length > 0) {
+      showtimes = showtimes.filter(s => filters.venueIds!.includes(s.venue.venueId));
+    }
 
     return showtimes;
   }
 
   /** For the organizer dashboard. Keeps events even when they have no showtimes yet. */
-  async getEvents(): Promise<{ eventId: number; title: string; durationMinutes: number; rating: string; thumbnail: string; tags: { typeId: number; typeName: string }[]; showtimes: Showtime[] }[]> {
+  async getEvents(): Promise<{ eventId: number; title: string; durationMinutes: number; rating: string; thumbnail: string; description: string; tags: { typeId: number; typeName: string }[]; showtimes: Showtime[] }[]> {
     const events = await request<BackendEvent[]>('/events');
     return events.map(e => ({
       eventId: e.eventId,
@@ -134,13 +144,14 @@ class ApiService {
       durationMinutes: e.durationMinutes,
       rating: e.rating,
       thumbnail: e.thumbnail,
+      description: e.description,
       tags: e.tags,
       showtimes: e.showtimes.map(s => this.mapShowtime(e, s)),
     }));
   }
 
   /** Organizer dashboard — only the current user's events. */
-  async getMyEvents(): Promise<{ eventId: number; title: string; durationMinutes: number; rating: string; thumbnail: string; tags: { typeId: number; typeName: string }[]; showtimes: Showtime[] }[]> {
+  async getMyEvents(): Promise<{ eventId: number; title: string; durationMinutes: number; rating: string; thumbnail: string; description: string; tags: { typeId: number; typeName: string }[]; showtimes: Showtime[] }[]> {
     const events = await request<BackendEvent[]>('/events/mine');
     return events.map(e => ({
       eventId: e.eventId,
@@ -148,6 +159,7 @@ class ApiService {
       durationMinutes: e.durationMinutes,
       rating: e.rating,
       thumbnail: e.thumbnail,
+      description: e.description,
       tags: e.tags,
       showtimes: e.showtimes.map(s => this.mapShowtime(e, s)),
     }));
@@ -207,11 +219,11 @@ class ApiService {
     return request<TagDto[]>('/tags');
   }
 
-  createEvent(data: { title: string; durationMinutes: number; rating: string; thumbnail: string; tagIds: number[] }) {
+  createEvent(data: { title: string; durationMinutes: number; rating: string; thumbnail: string; description: string; tagIds: number[] }) {
     return request('/events', { method: 'POST', body: JSON.stringify(data) });
   }
 
-  updateEvent(id: number, data: { title: string; durationMinutes: number; rating: string; thumbnail: string; tagIds: number[] }) {
+  updateEvent(id: number, data: { title: string; durationMinutes: number; rating: string; thumbnail: string; description: string; tagIds: number[] }) {
     return request(`/events/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   }
 
@@ -317,6 +329,31 @@ class ApiService {
     return request<{ eventTitle: string; ticketsSold: number; totalIncome: number }[]>(
       `/admin/reports/top-events-tickets${q ? `?${q}` : ''}`,
     );
+  }
+
+  async getOverview() {
+    return request<{
+      totalRevenue: number;
+      ticketsSoldThisMonth: number;
+      activeBookings: number;
+      totalUsers: number;
+      recentBookings: {
+        bookingId: number;
+        customerName: string;
+        eventTitle: string;
+        status: string;
+        totalAmount: number;
+        bookedAt: string;
+      }[];
+      upcomingShowtimes: {
+        showtimeId: number;
+        eventTitle: string;
+        venueName: string;
+        showSchedules: string;
+        totalCapacity: number;
+        bookedTickets: number;
+      }[];
+    }>('/admin/reports/overview');
   }
 
   async deleteShowtime(id: number): Promise<void> {
