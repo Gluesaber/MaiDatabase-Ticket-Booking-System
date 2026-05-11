@@ -274,12 +274,12 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age Rating</label>
                   <select value={form.rating} onChange={e => setField('rating', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Select ratingโ€ฆ</option>
-                    <option value="G">G โ€” General Audiences</option>
-                    <option value="PG">PG โ€” Parental Guidance Suggested</option>
-                    <option value="PG-13">PG-13 โ€” Parents Strongly Cautioned</option>
-                    <option value="R">R โ€” Restricted</option>
-                    <option value="NC-17">NC-17 โ€” Adults Only</option>
+                    <option value="">Select rating…</option>
+                    <option value="G">G — General Audiences</option>
+                    <option value="PG">PG — Parental Guidance Suggested</option>
+                    <option value="PG-13">PG-13 — Parents Strongly Cautioned</option>
+                    <option value="R">R — Restricted</option>
+                    <option value="NC-17">NC-17 — Adults Only</option>
                   </select>
                 </div>
                 <div>
@@ -299,7 +299,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                     maxLength={3000}
                     value={form.description}
                     onChange={e => setField('description', e.target.value)}
-                    placeholder="Provide a detailed description of your event, including what attendees can expect, highlights, or special instructionsโ€ฆ"
+                    placeholder="Provide a detailed description of your event, including what attendees can expect, highlights, or special instructions…"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
                   />
                   <p className="text-xs text-gray-400 mt-0.5 text-right">{form.description.length}/3000</p>
@@ -311,7 +311,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                   </button>
                   <button type="submit" disabled={submitting}
                     className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                    {submitting ? 'Creatingโ€ฆ' : 'Create Event'}
+                    {submitting ? 'Creating…' : 'Create Event'}
                   </button>
                 </div>
               </form>
@@ -353,12 +353,12 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age Rating</label>
                   <select value={editForm.rating} onChange={e => setEditField('rating', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Select ratingโ€ฆ</option>
-                    <option value="G">G โ€” General Audiences</option>
-                    <option value="PG">PG โ€” Parental Guidance Suggested</option>
-                    <option value="PG-13">PG-13 โ€” Parents Strongly Cautioned</option>
-                    <option value="R">R โ€” Restricted</option>
-                    <option value="NC-17">NC-17 โ€” Adults Only</option>
+                    <option value="">Select rating…</option>
+                    <option value="G">G — General Audiences</option>
+                    <option value="PG">PG — Parental Guidance Suggested</option>
+                    <option value="PG-13">PG-13 — Parents Strongly Cautioned</option>
+                    <option value="R">R — Restricted</option>
+                    <option value="NC-17">NC-17 — Adults Only</option>
                   </select>
                 </div>
                 <div>
@@ -378,7 +378,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                     maxLength={3000}
                     value={editForm.description}
                     onChange={e => setEditField('description', e.target.value)}
-                    placeholder="Provide a detailed description of your event, including what attendees can expect, highlights, or special instructionsโ€ฆ"
+                    placeholder="Provide a detailed description of your event, including what attendees can expect, highlights, or special instructions…"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
                   />
                   <p className="text-xs text-gray-400 mt-0.5 text-right">{editForm.description.length}/3000</p>
@@ -390,7 +390,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                   </button>
                   <button type="submit" disabled={editSubmitting}
                     className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                    {editSubmitting ? 'Savingโ€ฆ' : 'Save Changes'}
+                    {editSubmitting ? 'Saving…' : 'Save Changes'}
                   </button>
                 </div>
               </form>
@@ -400,7 +400,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
 
         {/* Event list */}
         {loading ? (
-          <p className="text-center text-gray-400 py-20">Loadingโ€ฆ</p>
+          <p className="text-center text-gray-400 py-20">Loading…</p>
         ) : eventGroups.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
             <p className="text-gray-400 text-lg mb-3">No events yet</p>
@@ -458,10 +458,10 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                       <div key={s.showtimeId} className="px-4 py-3 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-700">
-                            {s.venue.name} ยท {new Date(s.showSchedules).toLocaleString('en-TH')}
+                            {s.venue.name} · {new Date(s.showSchedules).toLocaleString('en-TH')}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5">
-                            {s.tiers.map(t => `${t.tierName} ฿${t.price.toLocaleString()}`).join(' ยท ')}
+                            {s.tiers.map(t => `${t.tierName} ฿${t.price.toLocaleString()}`).join(' · ')}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -485,7 +485,7 @@ export function OrganizerDashboardPage({ onNavigate }: Props) {
                               onClick={() => handleDeleteShowtime(
                                 s.showtimeId,
                                 group.eventId,
-                                `${s.venue.name} ยท ${new Date(s.showSchedules).toLocaleString('en-TH')}`,
+                                `${s.venue.name} · ${new Date(s.showSchedules).toLocaleString('en-TH')}`,
                               )}
                               className="text-xs text-red-500 hover:text-red-700 border border-red-200
                                          px-2.5 py-1 rounded-lg hover:bg-red-50 font-medium shrink-0"
