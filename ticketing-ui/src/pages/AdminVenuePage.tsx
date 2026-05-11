@@ -104,7 +104,7 @@ export function AdminVenuePage({ onNavigate }: Props) {
         )}
 
         {loading ? (
-          <p className="text-center text-gray-400 py-20">Loadingโ€ฆ</p>
+          <p className="text-center text-gray-400 py-20">Loading…</p>
         ) : venues.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
             <p className="text-gray-400 text-lg mb-3">No venues yet</p>
