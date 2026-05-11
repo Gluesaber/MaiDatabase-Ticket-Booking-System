@@ -43,10 +43,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/tags").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Venues: list is public so customers/guests can use the venue filter
+                .requestMatchers(HttpMethod.GET, "/api/venues").permitAll()
                 // Venues: layout endpoint is needed by customers for seat selection
                 .requestMatchers(HttpMethod.GET, "/api/venues/*/layout").authenticated()
-                // Venues: list (management dropdown) = ADMIN + ORGANIZER only
-                .requestMatchers(HttpMethod.GET, "/api/venues", "/api/venues/**").hasAnyRole("ADMIN", "ORGANIZER")
+                // Venues: individual venue details = ADMIN + ORGANIZER only
+                .requestMatchers(HttpMethod.GET, "/api/venues/**").hasAnyRole("ADMIN", "ORGANIZER")
                 .requestMatchers(HttpMethod.POST, "/api/venues").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/venues/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/venues/**").hasRole("ADMIN")

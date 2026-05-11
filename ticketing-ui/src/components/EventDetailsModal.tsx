@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Showtime } from '../types';
 import type { GroupedEvent } from './EventCard';
+import { api } from '../services/ApiService';
 
 const DESCRIPTION_THRESHOLD = 300;
 
@@ -62,6 +63,7 @@ export function EventDetailsModal({ group, onBook, onClose, isLoggedIn, isCustom
   const [expanded, setExpanded] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [pickedShowtime, setPickedShowtime] = useState<Showtime | null>(null);
+  const [freshTierCounts, setFreshTierCounts] = useState<Record<number, number>>({});
 
   const description = event.description ?? '';
   const isLong = description.length > DESCRIPTION_THRESHOLD;
@@ -70,14 +72,34 @@ export function EventDetailsModal({ group, onBook, onClose, isLoggedIn, isCustom
     : description;
 
   const picked = pickedShowtime;
-  const pickedAvailable = picked ? picked.tiers.reduce((s, t) => s + t.available, 0) : 0;
-  const pickedMinPrice  = picked ? Math.min(...picked.tiers.map(t => t.price)) : 0;
+  const hasFreshCounts = Object.keys(freshTierCounts).length > 0;
+  const pickedAvailable = picked
+    ? hasFreshCounts
+      ? Object.values(freshTierCounts).reduce((s, n) => s + n, 0)
+      : picked.tiers.reduce((s, t) => s + t.available, 0)
+    : 0;
+  const pickedMinPrice = picked ? Math.min(...picked.tiers.map(t => t.price)) : 0;
 
   const tagNames = event.tags.map(t => t.typeName);
   const emoji = tagNames.length > 0 ? (TAG_EMOJI[tagNames[0]] ?? '🎫') : '🎫';
   const gradient = tagNames.length > 0
     ? (PLACEHOLDER_GRADIENT[tagNames[0]] ?? 'from-indigo-500 to-violet-600')
     : 'from-indigo-500 to-violet-600';
+
+  async function pickShowtime(s: Showtime) {
+    setPickedShowtime(s);
+    setFreshTierCounts({});
+    try {
+      const layout = await api.getVenueLayout(s.venue.venueId, s.showtimeId);
+      const counts = layout.seats.reduce<Record<number, number>>((acc, seat) => {
+        if (seat.available) acc[seat.tierId] = (acc[seat.tierId] ?? 0) + 1;
+        return acc;
+      }, {});
+      setFreshTierCounts(counts);
+    } catch {
+      // silently fall back to cached counts from the event list
+    }
+  }
 
   function handleBook() {
     if (!picked) return;
@@ -195,7 +217,7 @@ export function EventDetailsModal({ group, onBook, onClose, isLoggedIn, isCustom
                   return (
                     <button
                       key={s.showtimeId}
-                      onClick={() => !soldOut && setPickedShowtime(s)}
+                      onClick={() => !soldOut && pickShowtime(s)}
                       disabled={soldOut}
                       className={`w-full text-left rounded-xl border px-4 py-3 transition-all ${
                         soldOut
@@ -248,20 +270,26 @@ export function EventDetailsModal({ group, onBook, onClose, isLoggedIn, isCustom
                 Ticket Tiers
               </p>
               <div className="space-y-2">
-                {picked.tiers.map(tier => (
-                  <div key={tier.tierId} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700 font-medium">{tier.tierName}</span>
-                      {tier.available === 0 && (
-                        <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">Sold out</span>
-                      )}
-                      {tier.available > 0 && tier.available <= 10 && (
-                        <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">Only {tier.available} left</span>
-                      )}
+                {picked.tiers.map(tier => {
+                  const hasFresh = Object.keys(freshTierCounts).length > 0;
+                  const displayAvailable = hasFresh
+                    ? (freshTierCounts[tier.tierId] ?? 0)
+                    : tier.available;
+                  return (
+                    <div key={tier.tierId} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700 font-medium">{tier.tierName}</span>
+                        {displayAvailable === 0 && (
+                          <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">Sold out</span>
+                        )}
+                        {displayAvailable > 0 && displayAvailable <= 10 && (
+                          <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">Only {displayAvailable} left</span>
+                        )}
+                      </div>
+                      <span className="text-sm font-bold text-indigo-600">฿{tier.price.toLocaleString()}</span>
                     </div>
-                    <span className="text-sm font-bold text-indigo-600">฿{tier.price.toLocaleString()}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="border-t border-gray-200 mt-2 pt-2 flex items-center justify-between">
                 <span className="text-xs text-gray-400">Starting from</span>
