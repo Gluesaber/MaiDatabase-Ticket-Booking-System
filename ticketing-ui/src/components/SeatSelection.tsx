@@ -57,6 +57,11 @@ export function SeatSelection({ showtime, onConfirm, onCancel }: Props) {
     return acc;
   }, {});
 
+  const tierAvailableCount = layout.seats.reduce<Record<number, number>>((acc, s) => {
+    if (s.available) acc[s.tierId] = (acc[s.tierId] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const total = selected.reduce((sum, s) => sum + s.price, 0);
 
   return (
@@ -72,7 +77,7 @@ export function SeatSelection({ showtime, onConfirm, onCancel }: Props) {
             {showtime.tiers.map(t => (
               <div key={t.tierId} className="flex items-center gap-2 text-sm">
                 <span className={`w-4 h-4 rounded ${tierColorMap[t.tierName] ?? 'bg-gray-200'}`} />
-                <span>{t.tierName} — ฿{t.price.toLocaleString()} ({t.available} left)</span>
+                <span>{t.tierName} — ฿{t.price.toLocaleString()} ({tierAvailableCount[t.tierId] ?? 0} left)</span>
               </div>
             ))}
             <div className="flex items-center gap-2 text-sm">
