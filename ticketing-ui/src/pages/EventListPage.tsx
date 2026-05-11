@@ -57,6 +57,21 @@ function filtersToSearch(f: FilterValues): string {
   return qs ? `?${qs}` : window.location.pathname;
 }
 
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+      <div className="w-full h-48 bg-gray-200" />
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-gray-200 rounded-full w-1/3" />
+        <div className="h-5 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-full" />
+        <div className="h-3 bg-gray-200 rounded w-5/6" />
+        <div className="h-9 bg-gray-200 rounded-lg mt-2" />
+      </div>
+    </div>
+  );
+}
+
 export function EventListPage({ onNavigate }: Props) {
   const { user, logout } = useAuth();
   const [eventGroups, setEventGroups] = useState<GroupedEvent[]>([]);
@@ -139,27 +154,50 @@ export function EventListPage({ onNavigate }: Props) {
         <PaymentCountdownBanner expiresAt={booking.expiresAt} onExpired={reset} />
       )}
 
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-indigo-600">🎫 NoLife Ticket</h1>
-          <div className="flex items-center gap-4">
+      <header className="bg-gradient-to-r from-indigo-700 to-violet-700 shadow-md">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">🎫 NoLife Ticket</h1>
+            <p className="text-indigo-200 text-xs mt-0.5">Find and book events near you</p>
+          </div>
+          <div className="flex items-center gap-3">
             {user ? (
               <>
-                <span className="text-sm text-gray-600">Hi, {user.firstName}</span>
+                <span className="text-sm text-indigo-100">Hi, {user.firstName}</span>
                 {(user.role === 'organizer' || user.role === 'admin') && (
-                  <button onClick={() => onNavigate('dashboard')} className="text-sm text-purple-600 font-medium hover:underline">
+                  <button
+                    onClick={() => onNavigate('dashboard')}
+                    className="text-sm text-white font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors"
+                  >
                     Dashboard
                   </button>
                 )}
                 {user.role === 'customer' && (
-                  <button onClick={() => onNavigate('history')} className="text-sm text-indigo-600 hover:underline">My Bookings</button>
+                  <button
+                    onClick={() => onNavigate('history')}
+                    className="text-sm text-indigo-100 hover:text-white transition-colors"
+                  >
+                    My Bookings
+                  </button>
                 )}
-                <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">Sign out</button>
+                <button onClick={logout} className="text-sm text-indigo-300 hover:text-white transition-colors">
+                  Sign out
+                </button>
               </>
             ) : (
               <>
-                <button onClick={() => onNavigate('login')} className="text-sm text-indigo-600 hover:underline">Sign in</button>
-                <button onClick={() => onNavigate('register')} className="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700">Register</button>
+                <button
+                  onClick={() => onNavigate('login')}
+                  className="text-sm text-indigo-100 hover:text-white transition-colors"
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => onNavigate('register')}
+                  className="text-sm bg-white text-indigo-700 font-semibold px-4 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
+                >
+                  Register
+                </button>
               </>
             )}
           </div>
@@ -170,25 +208,33 @@ export function EventListPage({ onNavigate }: Props) {
         <FilterBar allTags={allTags} allVenues={allVenues} initial={filters} onApply={handleApply} />
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400">Loading events…</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : eventGroups.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-lg mb-2">No events found</p>
-            <p className="text-sm">Try adjusting or clearing the filters.</p>
+          <div className="text-center py-24">
+            <div className="text-5xl mb-4">🔍</div>
+            <p className="text-lg font-medium text-gray-700 mb-1">No events found</p>
+            <p className="text-sm text-gray-400">Try adjusting or clearing the filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {eventGroups.map(g => (
-              <EventCard
-                key={g.event.eventId}
-                group={g}
-                onViewDetails={group => {
-                  setSelectedGroup(group);
-                  setStage('details');
-                }}
-              />
-            ))}
-          </div>
+          <>
+            <p className="text-sm text-gray-500 mb-5">
+              {eventGroups.length} event{eventGroups.length !== 1 ? 's' : ''} found
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {eventGroups.map(g => (
+                <EventCard
+                  key={g.event.eventId}
+                  group={g}
+                  onViewDetails={group => {
+                    setSelectedGroup(group);
+                    setStage('details');
+                  }}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
 
