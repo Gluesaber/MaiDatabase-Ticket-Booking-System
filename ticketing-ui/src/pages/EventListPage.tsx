@@ -104,8 +104,11 @@ export function EventListPage({ onNavigate }: Props) {
   }
 
   useEffect(() => {
-    api.getTags().then(setAllTags);
-    api.getVenues().then(setAllVenues);
+    api.getTags().then(setAllTags).catch(() => {});
+    api.getVenues().then(setAllVenues).catch(() => {});
+  }, [user?.role]); // re-fetch filter options when auth role changes
+
+  useEffect(() => {
     loadShowtimes(filters);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
