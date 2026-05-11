@@ -32,14 +32,39 @@ interface TopEventPoint { eventTitle: string; ticketsSold: number; totalIncome: 
 interface EventOption   { eventId: number; title: string; }
 
 const REPORT_TYPES = [
-  { value: 'peak-sales',    label: 'Peak Sales Period' },
-  { value: 'top-region',    label: 'Top-Selling Province' },
-  { value: 'capacity',      label: 'Booking-to-Capacity' },
-  { value: 'top-income',    label: 'Top Events by Income' },
-  { value: 'top-tickets',   label: 'Top Events by Tickets Sold' },
+  { value: 'peak-sales',  label: 'Peak Sales Period' },
+  { value: 'top-region',  label: 'Top-Selling Province' },
+  { value: 'capacity',    label: 'Booking-to-Capacity' },
+  { value: 'top-income',  label: 'Top Events by Income' },
+  { value: 'top-tickets', label: 'Top Events by Tickets Sold' },
 ];
 
 const BAR_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#ec4899','#3b82f6','#8b5cf6','#f97316'];
+
+const inputCls = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+
+function SkeletonReport() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="h-4 bg-gray-200 rounded w-48 mb-6" />
+        <div className="h-64 bg-gray-100 rounded-lg" />
+      </div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <div className="h-4 bg-gray-200 rounded w-40" />
+        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="px-5 py-3.5 border-b border-gray-50 flex items-center gap-4">
+            <div className="h-3.5 bg-gray-200 rounded flex-1" />
+            <div className="h-3.5 bg-gray-100 rounded w-20" />
+            <div className="h-3.5 bg-gray-100 rounded w-24" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function AdminReportsPage({ onNavigate }: Props) {
   const { user, logout } = useAuth();
@@ -50,7 +75,6 @@ export function AdminReportsPage({ onNavigate }: Props) {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
 
-  // per-report data
   const [peakData,     setPeakData]     = useState<PeakSalesPoint[]>([]);
   const [regionData,   setRegionData]   = useState<RegionPoint[]>([]);
   const [capacityData, setCapacityData] = useState<CapacityPoint[]>([]);
@@ -95,48 +119,56 @@ export function AdminReportsPage({ onNavigate }: Props) {
     load(reportType, '', '', undefined);
   }
 
-  // ── Peak Sales computed ──────────────────────────────────────────────────
-  const grandTotal  = peakData.reduce((s, r) => s + rowTotal(r), 0);
-  const colTotal    = (key: DayKey) => peakData.reduce((s, r) => s + r[key], 0);
+  const grandTotal = peakData.reduce((s, r) => s + rowTotal(r), 0);
+  const colTotal   = (key: DayKey) => peakData.reduce((s, r) => s + r[key], 0);
 
-  const isEmpty = {
+  const isEmpty = ({
     'peak-sales':  peakData.length === 0,
     'top-region':  regionData.length === 0,
     'capacity':    capacityData.length === 0,
     'top-income':  incomeData.length === 0,
     'top-tickets': ticketsData.length === 0,
-  }[reportType] ?? true;
+  })[reportType] ?? true;
+
+  const hasFilters = !!(startDate || endDate || eventId);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-indigo-600">🎫 NoLife Ticket</h1>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">ADMIN</span>
+      {/* Header */}
+      <header className="bg-gradient-to-r from-indigo-700 to-violet-700 shadow-md">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-white tracking-tight">🎫 NoLife Ticket</h1>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-400/30 text-red-100 border border-red-300/40">
+              ADMIN
+            </span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Hi, {user?.firstName}</span>
-            <button onClick={() => onNavigate('dashboard')} className="text-sm text-indigo-600 hover:underline font-medium">Dashboard</button>
-            <button onClick={() => onNavigate('admin-venues')} className="text-sm text-indigo-600 hover:underline">Venues</button>
-            <button onClick={() => onNavigate('events')} className="text-sm text-indigo-600 hover:underline">Browse</button>
-            <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">Sign out</button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-indigo-100">Hi, {user?.firstName}</span>
+            <button onClick={() => onNavigate('admin-overview')} className="text-sm text-indigo-100 hover:text-white transition-colors">Overview</button>
+            <button onClick={() => onNavigate('dashboard')} className="text-sm text-indigo-100 hover:text-white transition-colors">Events</button>
+            <button onClick={() => onNavigate('admin-venues')} className="text-sm text-indigo-100 hover:text-white transition-colors">Venues</button>
+            <button onClick={() => onNavigate('admin-reports')} className="text-sm text-white font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+              Reports
+            </button>
+            <button onClick={() => onNavigate('admin-users')} className="text-sm text-indigo-100 hover:text-white transition-colors">Users</button>
+            <button onClick={() => onNavigate('events')} className="text-sm text-indigo-100 hover:text-white transition-colors">Browse</button>
+            <button onClick={logout} className="text-sm text-indigo-300 hover:text-white transition-colors">Sign out</button>
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Reports</h2>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Reports</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Analyse sales, capacity, and revenue data</p>
+        </div>
 
         {/* Controls */}
-        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 mb-6 flex flex-wrap items-end gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 mb-6 flex flex-wrap items-end gap-4 shadow-sm">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Report Type</label>
-            <select
-              value={reportType}
-              onChange={e => handleTypeChange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
+            <label className="block text-xs font-medium text-gray-500 mb-1">Report Type</label>
+            <select value={reportType} onChange={e => handleTypeChange(e.target.value)} className={inputCls}>
               {REPORT_TYPES.map(r => (
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
@@ -145,11 +177,11 @@ export function AdminReportsPage({ onNavigate }: Props) {
 
           {reportType === 'peak-sales' && (
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Filter by Event</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Filter by Event</label>
               <select
                 value={eventId ?? ''}
                 onChange={e => setEventId(e.target.value ? Number(e.target.value) : undefined)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={inputCls}
               >
                 <option value="">All Events</option>
                 {eventOptions.map(e => (
@@ -160,43 +192,62 @@ export function AdminReportsPage({ onNavigate }: Props) {
           )}
 
           <div>
-            <label className="block text-xs text-gray-500 mb-1">From</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">To</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputCls} />
           </div>
+
           <div className="flex gap-2">
-            <button onClick={handleApply}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+            <button
+              onClick={handleApply}
+              className="flex items-center gap-1.5 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+            >
+              {loading ? (
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
               Apply
             </button>
-            {(startDate || endDate || eventId) && (
-              <button onClick={handleClear}
-                className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+            {hasFilters && (
+              <button onClick={handleClear} className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors">
                 Clear
               </button>
             )}
           </div>
         </div>
 
-        {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{error}</div>}
+        {error && (
+          <div className="mb-5 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9a1 1 0 112 0v4a1 1 0 11-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </div>
+        )}
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400">Loading report…</div>
+          <SkeletonReport />
         ) : isEmpty ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
-            <p className="text-gray-400">No data found for the selected period.</p>
+          <div className="text-center py-24 bg-white rounded-2xl border border-gray-200">
+            <div className="text-5xl mb-4">📊</div>
+            <p className="text-gray-700 font-medium text-lg mb-1">No data found</p>
+            <p className="text-sm text-gray-400">Try adjusting the date range or clearing the filters.</p>
           </div>
         ) : (
           <>
             {/* ── Peak Sales ─────────────────────────────────────── */}
             {reportType === 'peak-sales' && (
               <>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4 shadow-sm">
                   <h3 className="text-base font-semibold text-gray-800 mb-4">Ticket Sales by Hour &amp; Day of Week</h3>
                   <ResponsiveContainer width="100%" height={340}>
                     <LineChart data={peakData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -211,9 +262,12 @@ export function AdminReportsPage({ onNavigate }: Props) {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="px-5 py-3 border-b border-gray-100">
-                    <h3 className="text-base font-semibold text-gray-800">Sales Volume by Hour — {grandTotal.toLocaleString()} tickets total</h3>
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-800">Sales Volume by Hour</h3>
+                    <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+                      {grandTotal.toLocaleString()} tickets total
+                    </span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -255,7 +309,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
             {/* ── Top Region ─────────────────────────────────────── */}
             {reportType === 'top-region' && (
               <>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4 shadow-sm">
                   <h3 className="text-base font-semibold text-gray-800 mb-4">Revenue by Province</h3>
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={regionData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -269,7 +323,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
@@ -282,11 +336,11 @@ export function AdminReportsPage({ onNavigate }: Props) {
                       {regionData.map((r, i) => (
                         <tr key={r.province} className="hover:bg-gray-50">
                           <td className="px-4 py-3 font-medium text-gray-800">
-                            <span className="inline-block w-3 h-3 rounded-sm mr-2" style={{ background: BAR_COLORS[i % BAR_COLORS.length] }} />
+                            <span className="inline-block w-3 h-3 rounded-sm mr-2 align-middle" style={{ background: BAR_COLORS[i % BAR_COLORS.length] }} />
                             {r.province}
                           </td>
                           <td className="text-center px-4 py-3 text-gray-700">{r.ticketsSold.toLocaleString()}</td>
-                          <td className="text-right px-4 py-3 font-semibold text-indigo-700">฿{Number(r.totalIncome).toLocaleString()}</td>
+                          <td className="text-right px-4 py-3 font-bold text-indigo-700">฿{Number(r.totalIncome).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -297,9 +351,9 @@ export function AdminReportsPage({ onNavigate }: Props) {
 
             {/* ── Capacity Analysis ──────────────────────────────── */}
             {reportType === 'capacity' && (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="px-5 py-3 border-b border-gray-100">
-                  <h3 className="text-base font-semibold text-gray-800">Booking-to-Capacity per Showtime</h3>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="px-5 py-3.5 border-b border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-800">Booking-to-Capacity per Showtime</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -308,7 +362,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                         <th className="text-left px-4 py-3 font-semibold text-gray-600">Event</th>
                         <th className="text-left px-4 py-3 font-semibold text-gray-600">Venue</th>
                         <th className="text-left px-4 py-3 font-semibold text-gray-600">Date</th>
-                        <th className="text-center px-4 py-3 font-semibold text-gray-600">Booked / Capacity</th>
+                        <th className="text-center px-4 py-3 font-semibold text-gray-600">Booked / Cap.</th>
                         <th className="text-left px-4 py-3 font-semibold text-gray-600 min-w-[160px]">Fill Rate</th>
                       </tr>
                     </thead>
@@ -324,12 +378,12 @@ export function AdminReportsPage({ onNavigate }: Props) {
                               {new Date(r.showSchedules).toLocaleString('en-TH', { dateStyle: 'medium', timeStyle: 'short' })}
                             </td>
                             <td className="text-center px-4 py-3 text-gray-700">
-                              {r.bookedTickets} / {r.totalCapacity}
+                              {r.bookedTickets.toLocaleString()} / {r.totalCapacity.toLocaleString()}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 bg-gray-100 rounded-full h-2">
-                                  <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: color }} />
+                                  <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
                                 </div>
                                 <span className="text-xs font-semibold w-12 text-right" style={{ color }}>{pct.toFixed(1)}%</span>
                               </div>
@@ -346,7 +400,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
             {/* ── Top Events by Income ───────────────────────────── */}
             {reportType === 'top-income' && (
               <>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4 shadow-sm">
                   <h3 className="text-base font-semibold text-gray-800 mb-4">Top Events by Revenue</h3>
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={incomeData} layout="vertical" margin={{ top: 5, right: 30, left: 120, bottom: 5 }}>
@@ -360,7 +414,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
@@ -373,7 +427,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                     <tbody className="divide-y divide-gray-100">
                       {incomeData.map((r, i) => (
                         <tr key={r.eventTitle} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-bold text-gray-400">#{i + 1}</td>
+                          <td className="px-4 py-3 font-bold text-gray-300">#{i + 1}</td>
                           <td className="px-4 py-3 font-medium text-gray-900">{r.eventTitle}</td>
                           <td className="text-center px-4 py-3 text-gray-700">{r.ticketsSold.toLocaleString()}</td>
                           <td className="text-right px-4 py-3 font-bold text-indigo-700">฿{Number(r.totalIncome).toLocaleString()}</td>
@@ -388,7 +442,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
             {/* ── Top Events by Tickets Sold ─────────────────────── */}
             {reportType === 'top-tickets' && (
               <>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4 shadow-sm">
                   <h3 className="text-base font-semibold text-gray-800 mb-4">Top Events by Tickets Sold</h3>
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={ticketsData} layout="vertical" margin={{ top: 5, right: 30, left: 120, bottom: 5 }}>
@@ -402,7 +456,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
@@ -415,7 +469,7 @@ export function AdminReportsPage({ onNavigate }: Props) {
                     <tbody className="divide-y divide-gray-100">
                       {ticketsData.map((r, i) => (
                         <tr key={r.eventTitle} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-bold text-gray-400">#{i + 1}</td>
+                          <td className="px-4 py-3 font-bold text-gray-300">#{i + 1}</td>
                           <td className="px-4 py-3 font-medium text-gray-900">{r.eventTitle}</td>
                           <td className="text-center px-4 py-3 font-bold text-indigo-700">{r.ticketsSold.toLocaleString()}</td>
                           <td className="text-right px-4 py-3 text-gray-700">฿{Number(r.totalIncome).toLocaleString()}</td>
@@ -432,5 +486,3 @@ export function AdminReportsPage({ onNavigate }: Props) {
     </div>
   );
 }
-
-
